@@ -15,7 +15,7 @@
  *  See the GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with ECPP.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  As a special exception, the copyright holders of ECPP give you
  *  permission to link ECPP with independent modules to produce an
