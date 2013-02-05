@@ -36,7 +36,9 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/sleep.h>
+#include <avr/eeprom.h>
 #include <util/delay.h>
+#include <avr/pgmspace.h>
 
 #include <util/datatypes.hpp>
 
