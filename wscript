@@ -56,11 +56,11 @@ def generate_firmware(self):
   
   tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.flash'))
   tsk.set_run_after(self.strip_task)
-  tsk.env.OBJCOPY_FLAGS = '-R .eeprom'
+  tsk.env.OBJCOPY_FLAGS = '-R .eeprom'.split()
 
   tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.eeprom'))
   tsk.set_run_after(self.strip_task)
-  tsk.env.OBJCOPY_FLAGS = '-j .eeprom'
+  tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
 
 
 tool_prefixes = {
