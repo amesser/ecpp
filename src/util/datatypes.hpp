@@ -82,6 +82,12 @@ namespace Platform {
       constexpr auto SizeOf(const TYPE& type) -> typename UnsignedIntTypeEstimator<sizeof(TYPE)>::Type {
         return UnsignedIntTypeEstimator<sizeof(TYPE)>::Value;
       };
+
+      template<typename TYPE, unsigned long COUNT>
+      constexpr auto ElementCount(const TYPE (& type)[COUNT]) -> typename UnsignedIntTypeEstimator<COUNT>::Type {
+        return UnsignedIntTypeEstimator<COUNT>::Value;
+      };
+
     }
   }
 }
