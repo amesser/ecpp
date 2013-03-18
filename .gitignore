@@ -1,0 +1,5 @@
+# Python bte compiled files
+*.pyc
+
+# Editor Backup Files
+*~
