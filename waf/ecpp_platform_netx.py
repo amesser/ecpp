@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# Entry waf build script
+# Hilscher netx processor build support
 #
 # Copyright 2013 Andreas Messer <andi@bastelmap.de>
 #
@@ -33,19 +33,43 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
+from waflib.Configure import conf
 import os.path
-import inspect
-import sys
 
-_ecpp_dir  = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.append(os.path.join(_ecpp_dir,'waf'))
+netx_cpu = {
+  'netx50' :   'arm966e-s',
+}
 
-def options(opt):
-  opt.load('ecpp')
+netx_boards = {
+  'netstick' : 'netx50',
+}
 
-def configure(conf):
-  conf.env.ECPP_DIR = _ecpp_dir
-  conf.load('ecpp')
+@conf
+def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
+    global netx_cpu
 
-def build(bld):
-  bld.recurse(['src'])
+    if not device:
+      device, ldscript = netx_boards[board], 'board_hilscher_%s.ld' % board
+    else:
+      ldscript = 'device_hilscher_%s.ld' % device
+    
+    cpu = netx_cpu[device]
+
+    envname = 'device_%s' % device
+
+    conf.load('ecpp_toolchain')
+    conf.ecpp_setuptoolchain('arm')
+
+    create = envname not in conf.all_envs
+    conf.setenv(envname, conf.env)
+
+    if create:
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        conf.env.append_value(x, ['-mthumb', '-mthumb-interwork','-mtune=%s' % cpu])
+
+      ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript))
+
+      if ldscript:
+        conf.env['LINKERSCRIPT'] = ldscript.abspath()
+
+      conf.env['DEVICE'] = device

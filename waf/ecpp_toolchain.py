@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# Entry waf build script
+# Generic gcc toolchain suppport
 #
 # Copyright 2013 Andreas Messer <andi@bastelmap.de>
 #
@@ -33,19 +33,56 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-import os.path
-import inspect
-import sys
+from waflib.Configure import conf, find_program as find_program_orig 
 
-_ecpp_dir  = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.append(os.path.join(_ecpp_dir,'waf'))
+tool_prefixes = {
+  'avr8' : ['avr-'],
+  'arm'  : ['arm-none-eabi-', 'arm-unknown-eabi-'],
+}
 
+@conf 
+def find_program(self,filename,**kw):
+    prefix = self.env['TOOL_PREFIX'] or ''
+    
+    if not isinstance(filename,list):
+        filename = [filename]
+        
+    return find_program_orig(self,list(prefix + x for x in filename),**kw)     
+    
 def options(opt):
-  opt.load('ecpp')
+    opt.load('gcc')
+    opt.load('gxx')
 
-def configure(conf):
-  conf.env.ECPP_DIR = _ecpp_dir
-  conf.load('ecpp')
+@conf
+def ecpp_setuptoolchain(conf, arch):
+    global tool_prefixes
 
-def build(bld):
-  bld.recurse(['src'])
+    arch = arch.lower()
+    envname = 'toolchain_%s' % arch
+
+    create = envname not in conf.all_envs
+    conf.setenv(envname, conf.env)
+    
+    if create:
+      for prefix in tool_prefixes[arch]:
+        try:
+          conf.env.stash()
+          conf.env['TOOL_PREFIX'] = prefix
+          
+          conf.load('gcc')
+          conf.load('gxx')
+
+          conf.find_program(['strip'],   var='STRIP')
+          conf.find_program(['objcopy'], var='OBJCOPY')
+          conf.find_program(['objdump'], var='OBJDUMP')
+
+          conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
+          conf.env.append_value('CFLAGS',    ['-Wall'])
+          conf.env.append_value('CXXFLAGS',  ['-Wall'])
+        except conf.errors.ConfigurationError:
+          conf.env.revert()
+        else:
+          break
+      else:
+        conf.fatal('Could not find a valid toolchain for "%s".' % arch)
+

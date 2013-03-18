@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# Entry waf build script
-#
 # Copyright 2013 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
@@ -33,19 +31,32 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-import os.path
-import inspect
-import sys
+from waflib.TaskGen import feature, after_method
 
-_ecpp_dir  = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.append(os.path.join(_ecpp_dir,'waf'))
+@feature('firmware')
+@after_method('apply_link')
+def generate_firmware(self):
+  elf_node = self.link_task.outputs[0]
+  self.strip_task = self.create_task('strip',elf_node,None)
 
-def options(opt):
-  opt.load('ecpp')
+  tsk = self.create_task('listing', elf_node, elf_node.change_ext('.lst'))
+  tsk.set_run_after(self.strip_task)
+
+  tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.hex'))
+  tsk.set_run_after(self.strip_task)
+  tsk.env.OBJCOPY_FLAGS = '-R .eeprom'.split()
+
+  tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.eep'))
+  tsk.set_run_after(self.strip_task)
+  tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
 
 def configure(conf):
-  conf.env.ECPP_DIR = _ecpp_dir
-  conf.load('ecpp')
+    env = conf.env
 
-def build(bld):
-  bld.recurse(['src'])
+    for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        env.append_value(x, '-mmcu=%s' % env.DEVICE.lower())
+
+    for x in 'CFLAGS CXXFLAGS'.split():
+      env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums'])
+
+    env.append_values['LINKFLAGS', ['--static', '-Wl,--gc-sections']
