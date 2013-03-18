@@ -76,9 +76,8 @@ def ecpp_setuptoolchain(conf, arch):
           conf.find_program(['objcopy'], var='OBJCOPY')
           conf.find_program(['objdump'], var='OBJDUMP')
 
-          conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
           conf.env.append_value('CFLAGS',    ['-Wall'])
-          conf.env.append_value('CXXFLAGS',  ['-Wall'])
+          conf.env.append_value('CXXFLAGS',  ['-std=c++11','-Wall'])
         except conf.errors.ConfigurationError:
           conf.env.revert()
         else:

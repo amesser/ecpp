@@ -66,16 +66,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
             func = getattr(conf,'ecpp_setupbuild_%s_%s' % (k,v),None)
             if func:
                 func(**dict(kw))
-                break
-    
-    # Mark this env to build a ecpp library for
-    conf.env['ECPP_BUILDLIB'] = True
-    conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
-
-    # libc needs ecpp library for support code!
-    conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
-    conf.env['STLIB_gcc'] = ['gcc']
-    
+                break    
 
     conf.setenv(envname,conf.env)
     # override build flag
@@ -83,12 +74,14 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 
 @conf
 def ecpp_build(bld, id, **kw):
+    env = bld.all_envs[id]
+    
     features = Utils.to_list(kw.get('features',[])) 
-
     features.append('ecpp')
+    features.extend(env['ECPP_FEATURES'])
 
     kw['features'] = features
-    bld(env=bld.all_envs[id],**kw)
+    bld(env=env,**kw)
 
 def configure(conf):
     conf.load('ecpp_common')

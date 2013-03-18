@@ -63,9 +63,11 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
     create = envname not in conf.all_envs
     conf.setenv(envname, conf.env)
 
-    if create:
+    if create:      
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mthumb', '-mthumb-interwork','-mtune=%s' % cpu])
+
+      conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
       ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript))
 
@@ -73,3 +75,13 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
         conf.env['LINKERSCRIPT'] = ldscript.abspath()
 
       conf.env['DEVICE'] = device
+
+      # Mark this env to build a ecpp library for
+      conf.env['ECPP_BUILDLIB'] = True
+      conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
+
+      # new libc needs ecpp library for support code!
+      conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
+      conf.env['STLIB_gcc'] = ['gcc']
+      
+      

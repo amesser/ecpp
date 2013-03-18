@@ -32,8 +32,10 @@
 # version.
 
 from waflib.TaskGen import feature, after_method
+from waflib.Configure import conf
+import os.path
 
-@feature('firmware')
+@feature('avr-firmware')
 @after_method('apply_link')
 def generate_firmware(self):
   elf_node = self.link_task.outputs[0]
@@ -50,13 +52,27 @@ def generate_firmware(self):
   tsk.set_run_after(self.strip_task)
   tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
 
-def configure(conf):
-    env = conf.env
+@conf
+def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
+    envname = 'device_%s' % device
 
-    for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
-        env.append_value(x, '-mmcu=%s' % env.DEVICE.lower())
+    conf.load('ecpp_toolchain')
+    conf.ecpp_setuptoolchain('avr8')
 
-    for x in 'CFLAGS CXXFLAGS'.split():
-      env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums'])
+    create = envname not in conf.all_envs
+    conf.setenv(envname, conf.env)
 
-    env.append_values['LINKFLAGS', ['--static', '-Wl,--gc-sections']
+    if create:
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        conf.env.append_value(x, ['-mmcu=%s' % device.lower()])
+
+      for x in 'CFLAGS CXXFLAGS'.split():
+        conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums'])
+
+      conf.env.append_value('LINKFLAGS', ['--static', '-Wl,--gc-sections'])
+      
+      n = conf.root.find_dir(os.path.join(conf.env['ECPP_DIR'],'src'))
+      conf.env.append_value('INCLUDES', n.abspath())
+
+      conf.env['DEVICE'] = device
+      conf.env.append_value('ECPP_FEATURES',['avr-firmware'])
