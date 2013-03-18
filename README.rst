@@ -17,14 +17,17 @@ As base for the build scripts, the `waf meta build system`_
 was used. Currently the following targets are supported:
 
 - Atmel AVR8
-  - ATTiny2313
-  
+  All Targets supported by GCC compiler toolchain
+
+- ARM
+  - Hilscher netX50 (Very Very Preliminary)
+
 .. _`waf meta build system`: http://code.google.com/p/waf/
 
 Devices
 ~~~~~~~
 
-Import part of embedded softwares are drivers to external
+Important part of embedded softwares are drivers to external
 components. Currently implemented are:
 
 - SDCard Driver for SPI Mode
