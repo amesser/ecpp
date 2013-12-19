@@ -41,6 +41,7 @@
 #include <avr/pgmspace.h>
 
 #include <util/datatypes.hpp>
+#include <generic/buffer.hpp>
 
 namespace Platform {
   namespace Architecture {
@@ -50,6 +51,118 @@ namespace Platform {
         CriticalSectionGuard()  {cli();}
         ~CriticalSectionGuard() {sei();}
       };
+
+      using namespace ::Platform::Buffer;
+
+      template<size_t Count, typename Type>
+      class FlashBufferBase;
+
+
+      class FlashBufferReader
+      {
+      private:
+        uint16_t _address;
+        uint16_t _size;
+
+      public:
+        constexpr FlashBufferReader() : _address(0), _size(0) {}
+
+        template< size_t Size, typename Type>
+        constexpr FlashBufferReader(const FlashBufferBase<Size, Type> & buf) :
+          _address(reinterpret_cast<uint16_t>(&(buf.data()))),
+          _size(Size) {}
+
+        FlashBufferReader(const FlashBufferReader & rhs) :
+          _address(rhs._address), _size(rhs._size) {}
+
+        template< size_t Size, typename Type>
+        void init(const FlashBufferBase<Size, Type> & buf){
+          _address = reinterpret_cast<uint16_t>(&(buf.data()));
+          _size = Size;
+        }
+
+        uint8_t at(size_t offset) const
+        {
+          uint16_t address = _address + offset;
+          uint8_t value;
+
+          asm volatile (
+              "lpm %0, %a1+"
+              : "=r" (value), "=z" (address)
+              : "1" (address)
+          );
+
+          return value;
+        }
+
+        size_t size() const {return _size;}
+      };
+
+      template<size_t Count, typename Type>
+      class FlashBufferBase : public BufferBase<Count, Type>
+      {
+      public:
+        constexpr FlashBufferBase(const Type (& init)[Count]) : BufferBase<Count,Type>(init) {}
+      };
+
+      template<size_t Count>
+      class FlashBufferBase<Count, uint8_t> : public BufferBase<Count, uint8_t>
+      {
+      public:
+        typedef ConstBufferIterator<uint8_t, FlashBufferBase> const_iterator;
+        typedef FlashBufferBase<Count, uint8_t> BaseType;
+
+        constexpr FlashBufferBase(const uint8_t (& init)[Count]) : BufferBase<Count, uint8_t>(init) {}
+
+        typedef FlashBufferReader ReaderType;
+        uint8_t at(size_t index) const { return FlashBufferReader(*this).at(index); }
+      };
+
+
+
+      template<size_t Count, typename Type>
+      class EEPROMBufferBase : public BufferBase<Count, Type>
+      {
+      public:
+
+        constexpr EEPROMBufferBase(const Type (& init)[Count]) : BufferBase<Count,Type>(init) {}
+      };
+
+      template<size_t Count>
+      class EEPROMBufferBase<Count,uint8_t> : public BufferBase<Count,uint8_t>
+      {
+      public:
+        typedef EEPROMBufferBase<Count, uint8_t> BaseType;
+        constexpr EEPROMBufferBase(const uint8_t (& init)[Count]) : BufferBase<Count,uint8_t>(init) {}
+        uint8_t at(size_t index) const {
+          EEAR = static_cast<uint8_t>(reinterpret_cast<uint16_t>(&(this->_data[index])));
+          EECR |= _BV(EERE);
+          return EEDR;
+        }
+      };
+
+      template<size_t Count, typename Type = uint8_t>
+      using FlashBuffer  = ::Platform::Buffer::Buffer<Count, Type, FlashBufferBase<Count,Type> >;
+
+      template<size_t Count, typename Type = uint8_t>
+      using EEPROMBuffer  = ::Platform::Buffer::Buffer<Count, Type, EEPROMBufferBase<Count,Type> >;
+
+
+      template<typename Init, template <size_t, typename> class Storage>
+      class ConstantArrayBuffer{};
+
+
+      template<typename Init>
+      class ConstantArrayBuffer<Init, FlashBuffer>
+      {
+      public:
+        typedef typename Init::template OtherBuffer<FlashBuffer> Type;
+        static const Type PROGMEM value ;
+      };
+
+      template<typename Init>
+      const typename ConstantArrayBuffer<Init, FlashBuffer>::Type PROGMEM
+        ConstantArrayBuffer<Init, FlashBuffer>::value = ConstantArrayBuffer<Init, FlashBuffer>::Type(Init());
 
 
       template<typename TYPE>
@@ -107,8 +220,9 @@ namespace Platform {
         }
 
         static constexpr uint8_t getDelaySPI() {
-          return static_cast<uint8_t>(min(255.,max((int32_t)0,(int32_t)((double) F_CPU / (double) SPEED / 2.) - 7 + 2) / 3 + 1.));
+          return static_cast<uint8_t>(min((int32_t)255,(max((int32_t)0,(int32_t)((double) F_CPU / (double) SPEED / 2.) - 7) + 2) / 3));
         }
+
 
         static uint8_t transferByte(const uint8_t data) {
           USIDR  = data;
@@ -123,6 +237,12 @@ namespace Platform {
           } while (0 == (USISR & _BV(USIOIF)));
 
           return USIDR;
+        }
+
+        static uint8_t transferBytes(uint8_t data1, uint8_t data2)
+        {
+          transferByte(data1);
+          return transferByte(data2);
         }
 
         template<typename COUNT>
@@ -145,6 +265,80 @@ namespace Platform {
       };
     }
   }
+
+  namespace Buffer {
+    using namespace ::Platform::Architecture::AVR8;
+
+    class ConstBufferIteratorValue;
+
+    template<>
+    class ConstBufferIterator<uint8_t, FlashBufferBase>
+    {
+    private:
+      const uint8_t           *_data;
+    public:
+      typedef ConstBufferIterator<uint8_t, FlashBufferBase> self_type;
+
+      constexpr ConstBufferIterator() : _data(0) {};
+      constexpr ConstBufferIterator(const uint8_t *data) : _data(data) {}
+
+      uint8_t operator * () const {
+        uint16_t address = reinterpret_cast<uint16_t>(_data);
+        uint8_t value;
+
+        asm volatile (
+            "lpm %0, %a1+"
+            : "=r" (value), "=z" (address)
+            : "1" (address)
+        );
+        return value;
+      }
+
+      constexpr bool operator == (const self_type &rhs) const {return this->_data == rhs._data;}
+      constexpr bool operator != (const self_type &rhs) const {return this->_data != rhs._data;}
+      constexpr bool operator >  (const self_type &rhs) const {return this->_data > rhs._data;}
+      self_type operator + (size_t count) const {
+        const uint8_t *data = _data + count;
+
+        if (data < _data)
+          data = reinterpret_cast<uint8_t*>(~0);
+
+        return {data};
+      }
+
+      self_type & operator ++ () {_data++; return *this;}
+      ConstBufferIteratorValue operator ++ (int); // {return self_type(_data++);}
+    };
+
+    class ConstBufferIteratorValue : public ConstBufferIterator<uint8_t, FlashBufferBase>
+    {
+    private:
+      const uint8_t _val;
+    public:
+      constexpr ConstBufferIteratorValue(const uint8_t *data, uint8_t val) :
+      ConstBufferIterator(data), _val(val) {}
+      uint8_t operator * () const { return _val; }
+    };
+
+    ConstBufferIteratorValue
+    ConstBufferIterator<uint8_t, FlashBufferBase>::operator ++ (int)
+    {
+      const uint8_t *bck = _data;
+      uint16_t address = reinterpret_cast<uint16_t>(_data);
+      uint8_t value;
+
+      asm volatile (
+          "lpm %0, %a1+"
+          : "=r" (value), "=z" (address)
+          : "1" (address)
+      );
+
+      _data = reinterpret_cast<uint8_t*>(address);
+
+      return ConstBufferIteratorValue(bck, value);
+    }
+
+  };
 }
 
 

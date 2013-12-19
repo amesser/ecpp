@@ -33,6 +33,13 @@ components. Currently implemented are:
 - SDCard Driver for SPI Mode
 - MCP3204 ADC Driver (SPI Mode) 
 
+Protocols
+~~~~~~~~~
+
+Some initial work has been done to support the following protocols:
+
+- USB, USB HID (Descriptors)
+
 Authors
 -------
 

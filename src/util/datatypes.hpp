@@ -34,16 +34,21 @@
 
 #include <stdint.h>
 
+namespace std {
+  typedef unsigned int size_t;
+}
+
 namespace Platform {
   namespace Util {
     namespace Datatypes {
+
       template<unsigned int BYTES>
       class UnsignedIntType { public: typedef UnsignedIntType<BYTES + 1> Type; };
 
       template<> class UnsignedIntType<1> { public: typedef uint8_t  Type; };
       template<> class UnsignedIntType<2> { public: typedef uint16_t Type; };
       template<> class UnsignedIntType<4> { public: typedef uint32_t Type; };
-      template<> class UnsignedIntType<8> { public: typedef uint16_t Type; };
+      template<> class UnsignedIntType<8> { public: typedef uint64_t Type; };
 
       template<unsigned int BYTES>
       class IntType { public: typedef IntType<BYTES + 1> Type; };
@@ -51,7 +56,7 @@ namespace Platform {
       template<> class IntType<1> { public: typedef int8_t  Type; };
       template<> class IntType<2> { public: typedef int16_t Type; };
       template<> class IntType<4> { public: typedef int32_t Type; };
-      template<> class IntType<8> { public: typedef int16_t Type; };
+      template<> class IntType<8> { public: typedef int64_t Type; };
 
       template<unsigned long VALUE>
       class BytesUnsignedInt { public: static constexpr uint8_t Bytes = 1 + BytesUnsignedInt<VALUE/256>::Bytes;};
