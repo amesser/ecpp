@@ -118,8 +118,6 @@ namespace Platform {
         uint8_t at(size_t index) const { return FlashBufferReader(*this).at(index); }
       };
 
-
-
       template<size_t Count, typename Type>
       class EEPROMBufferBase : public BufferBase<Count, Type>
       {
@@ -132,6 +130,9 @@ namespace Platform {
       class EEPROMBufferBase<Count,uint8_t> : public BufferBase<Count,uint8_t>
       {
       public:
+        typedef ConstBufferIterator<uint8_t, EEPROMBufferBase> const_iterator;
+        typedef BufferIterator<uint8_t, EEPROMBufferBase> iterator;
+
         typedef EEPROMBufferBase<Count, uint8_t> BaseType;
         constexpr EEPROMBufferBase(const uint8_t (& init)[Count]) : BufferBase<Count,uint8_t>(init) {}
         uint8_t at(size_t index) const {
@@ -163,6 +164,18 @@ namespace Platform {
       template<typename Init>
       const typename ConstantArrayBuffer<Init, FlashBuffer>::Type PROGMEM
         ConstantArrayBuffer<Init, FlashBuffer>::value = ConstantArrayBuffer<Init, FlashBuffer>::Type(Init());
+
+      template<typename Init>
+      class ConstantArrayBuffer<Init, EEPROMBuffer>
+      {
+      public:
+        typedef typename Init::template OtherBuffer<EEPROMBuffer> Type;
+        static const Type EEMEM value ;
+      };
+
+      template<typename Init>
+      const typename ConstantArrayBuffer<Init, EEPROMBuffer>::Type EEMEM
+        ConstantArrayBuffer<Init, EEPROMBuffer>::value = ConstantArrayBuffer<Init, EEPROMBuffer>::Type(Init());
 
 
       template<typename TYPE>
@@ -269,7 +282,8 @@ namespace Platform {
   namespace Buffer {
     using namespace ::Platform::Architecture::AVR8;
 
-    class ConstBufferIteratorValue;
+    template<typename Type, template<size_t, typename> class Buffer>
+    class ConstBufferIteratorValue {};
 
     template<>
     class ConstBufferIterator<uint8_t, FlashBufferBase>
@@ -307,10 +321,11 @@ namespace Platform {
       }
 
       self_type & operator ++ () {_data++; return *this;}
-      ConstBufferIteratorValue operator ++ (int); // {return self_type(_data++);}
+      ConstBufferIteratorValue<uint8_t, FlashBufferBase> operator ++ (int); // {return self_type(_data++);}
     };
 
-    class ConstBufferIteratorValue : public ConstBufferIterator<uint8_t, FlashBufferBase>
+    template<>
+    class ConstBufferIteratorValue<uint8_t, FlashBufferBase> : public ConstBufferIterator<uint8_t, FlashBufferBase>
     {
     private:
       const uint8_t _val;
@@ -320,7 +335,7 @@ namespace Platform {
       uint8_t operator * () const { return _val; }
     };
 
-    ConstBufferIteratorValue
+    ConstBufferIteratorValue<uint8_t, FlashBufferBase>
     ConstBufferIterator<uint8_t, FlashBufferBase>::operator ++ (int)
     {
       const uint8_t *bck = _data;
@@ -335,8 +350,39 @@ namespace Platform {
 
       _data = reinterpret_cast<uint8_t*>(address);
 
-      return ConstBufferIteratorValue(bck, value);
+      return {bck, value};
     }
+
+    template<>
+    class ConstBufferIterator<uint8_t, EEPROMBufferBase>
+    {
+    private:
+      uint8_t           _addr;
+
+    public:
+      typedef ConstBufferIterator<uint8_t, EEPROMBufferBase> self_type;
+
+      constexpr ConstBufferIterator() : _addr(0) {};
+      constexpr ConstBufferIterator(const uint8_t addr)  : _addr(addr) {}
+      constexpr ConstBufferIterator(const uint8_t *data) : _addr(reinterpret_cast<uint16_t>(data)) {}
+
+      uint8_t operator * () const {
+        EEAR  = _addr;
+        EECR |= 1 << EERE;
+
+        return EEDR;
+      }
+
+      constexpr bool operator == (const self_type &rhs) const {return this->_addr == rhs._addr;}
+      constexpr bool operator != (const self_type &rhs) const {return this->_addr != rhs._addr;}
+      constexpr bool operator >  (const self_type &rhs) const {return this->_addr > rhs._addr;}
+
+      self_type operator + (size_t count) const { return {static_cast<uint8_t>(_addr + count)}; }
+
+      self_type & operator ++ ()     {_addr++; return *this;}
+      self_type   operator ++ (int)  {uint8_t bck = _addr; _addr++; return {bck};}
+    };
+
 
   };
 }
