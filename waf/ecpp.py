@@ -59,6 +59,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
         if os.path.exists(os.path.join(conf.env['ECPP_DIR'], 'waf' , module + '.py')):
             conf.load(module)
 
+    conf.setenv("")
     envname    = id
 
     if envname not in conf.all_envs:

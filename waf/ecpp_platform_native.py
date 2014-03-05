@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# Generic gcc toolchain suppport
+# native build support
 #
-# Copyright 2013 Andreas Messer <andi@bastelmap.de>
+# Copyright 2014 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
 #
@@ -33,56 +33,21 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-from waflib.Configure import conf, find_program as find_program_orig 
-
-tool_prefixes = {
-  'avr8'    : ['avr-'],
-  'arm'     : ['arm-none-eabi-', 'arm-unknown-eabi-'],
-  'native'  : [''],
-}
-
-@conf 
-def find_program(self,filename,**kw):
-    prefix = self.env['TOOL_PREFIX'] or ''
-    
-    if not isinstance(filename,list):
-        filename = [filename]
-        
-    return find_program_orig(self,list(prefix + x for x in filename),**kw)     
-    
-def options(opt):
-    opt.load('gcc')
-    opt.load('gxx')
+from waflib.Configure import conf
+import os.path
 
 @conf
-def ecpp_setuptoolchain(conf, arch):
-    global tool_prefixes
+def ecpp_setupbuild_platform_native(conf, device, board, platform, arch):
+    envname = 'platform_%s' % platform
 
-    arch = arch.lower()
-    envname = 'toolchain_%s' % arch
+    conf.load('ecpp_toolchain')
+    conf.ecpp_setuptoolchain('native')
 
     create = envname not in conf.all_envs
     conf.setenv(envname, conf.env)
-    
+
     if create:
-      for prefix in tool_prefixes[arch]:
-        try:
-          conf.env.stash()
-          conf.env['TOOL_PREFIX'] = prefix
-          
-          conf.load('gcc')
-          conf.load('gxx')
-
-          conf.find_program(['strip'],   var='STRIP')
-          conf.find_program(['objcopy'], var='OBJCOPY')
-          conf.find_program(['objdump'], var='OBJDUMP')
-
-          conf.env.append_value('CFLAGS',    ['-Wall'])
-          conf.env.append_value('CXXFLAGS',  ['-std=c++11','-Wall'])
-        except conf.errors.ConfigurationError:
-          conf.env.revert()
-        else:
-          break
-      else:
-        conf.fatal('Could not find a valid toolchain for "%s".' % arch)
-
+      n = conf.root.find_dir(os.path.join(conf.env['ECPP_DIR'],'src'))
+      conf.env.append_value('INCLUDES', n.abspath())
+      
+      
