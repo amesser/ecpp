@@ -72,6 +72,12 @@ namespace Platform {
 
 
     template<typename Type, template<size_t, typename> class Buffer>
+    class BufferIterator;
+
+    template<typename Type, template<size_t, typename> class Buffer>
+    class ConstBufferIterator;
+
+    template<typename Type, template<size_t, typename> class Buffer>
     class BufferIterator {};
 
     template<typename Type, template<size_t, typename> class Buffer>
@@ -128,7 +134,7 @@ namespace Platform {
       template<typename T>
       constexpr Buffer(Buffer<Count, Type, T> const &init) : Storage(init.data()) {}
 
-      constexpr Type operator [] (size_t index) const {return this->at(index);}
+      constexpr Type operator [] (size_t index) const {return *(this->begin() + index);}
       Type & operator [] (size_t index)  {return this->at(index);}
 
       typename Storage::const_iterator begin() const { return &this->_data[0];}
