@@ -58,6 +58,15 @@ namespace Platform {
       template<> class IntType<4> { public: typedef int32_t Type; };
       template<> class IntType<8> { public: typedef int64_t Type; };
 
+      template<typename TYPE>  class DoubleWidthType {};
+
+      template<> class DoubleWidthType<uint8_t>  { public: typedef uint16_t t_DoubleWidth;};
+      template<> class DoubleWidthType<uint16_t> { public: typedef uint32_t t_DoubleWidth;};
+      template<> class DoubleWidthType<uint32_t> { public: typedef uint64_t t_DoubleWidth;};
+      template<> class DoubleWidthType<int8_t>   { public: typedef int16_t  t_DoubleWidth;};
+      template<> class DoubleWidthType<int16_t>  { public: typedef int32_t  t_DoubleWidth;};
+      template<> class DoubleWidthType<int32_t>  { public: typedef int64_t  t_DoubleWidth;};
+
       template<unsigned long VALUE>
       class BytesUnsignedInt { public: static constexpr uint8_t Bytes = 1 + BytesUnsignedInt<VALUE/256>::Bytes;};
       template<>
@@ -92,6 +101,233 @@ namespace Platform {
       constexpr auto ElementCount(const TYPE (& type)[COUNT]) -> typename UnsignedIntTypeEstimator<COUNT>::Type {
         return UnsignedIntTypeEstimator<COUNT>::Value;
       };
+
+
+      template<typename TYPE, unsigned long SCALE>
+      class FixedPoint;
+
+#ifdef  _GLIBCXX_OSTREAM
+      template<typename TYPE, unsigned long SCALE>
+      std::ostream& operator<<(std::ostream& stream, const FixedPoint<TYPE,SCALE>& fp);
+#endif
+
+      template<typename TYPE, unsigned long SCALE>
+      class FixedPoint
+      {
+      private:
+        typedef typename DoubleWidthType<TYPE>::t_DoubleWidth t_DoubleWidth;
+        TYPE m_value;
+
+        template<typename VALUE>
+        static constexpr TYPE rescale(const VALUE & value, const unsigned long & scale)
+        {
+          return static_cast<TYPE>( (SCALE >= scale) ?
+              (value * static_cast<TYPE>(SCALE / scale)) : (value / (scale / SCALE)));
+        }
+
+      public:
+        constexpr FixedPoint() {};
+
+        template<typename INIT>
+        constexpr FixedPoint(const INIT &value, const unsigned long & scale = 1) :
+          m_value( rescale(value,scale)) {};
+
+        template<typename CAST>
+        operator CAST () const {return static_cast<CAST>(m_value) / SCALE;}
+
+        template<typename RHS>
+        FixedPoint & operator = (const RHS & rhs)
+        {
+          m_value = rescale(rhs, 1);
+          return *this;
+        }
+
+        template<typename RHS_TYPE, int RHS_SCALE>
+        FixedPoint & operator = (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs)
+        {
+          m_value = rescale(rhs.m_value, RHS_SCALE);
+          return *this;
+        }
+
+        template<typename RHS>
+        constexpr FixedPoint operator * (const RHS & rhs) const
+        {
+          return {static_cast<t_DoubleWidth>(m_value) * rhs, SCALE};
+        }
+
+        template<typename RHS_TYPE, unsigned long RHS_SCALE>
+        constexpr FixedPoint operator * (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+        {
+          return {static_cast<t_DoubleWidth>(m_value) * rhs.m_value / RHS_SCALE, SCALE};
+        }
+
+        template<typename RHS>
+        constexpr FixedPoint operator / (const RHS & rhs) const
+        {
+          return {m_value / rhs, SCALE};
+        }
+
+        template<typename RHS_TYPE, unsigned long RHS_SCALE>
+        constexpr FixedPoint operator / (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+        {
+          return {static_cast<t_DoubleWidth>(m_value) * RHS_SCALE / rhs.m_value, SCALE};
+        }
+
+        template<typename RHS_TYPE, unsigned long RHS_SCALE>
+        constexpr FixedPoint operator + (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+        {
+          return {m_value + rescale(rhs.m_value, RHS_SCALE),SCALE};
+        }
+
+        template<typename RHS>
+        constexpr FixedPoint operator - (const RHS & rhs) const
+        {
+          return { m_value - rescale(rhs, 1), SCALE};
+        }
+
+        template<typename RHS_TYPE, unsigned long RHS_SCALE>
+        constexpr FixedPoint operator - (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+        {
+          return { m_value - rescale(rhs.m_value, RHS_SCALE), SCALE};
+        }
+
+        constexpr FixedPoint operator - () const
+        {
+          return {-m_value,SCALE};
+        }
+
+        template<typename RHS>
+        constexpr bool operator >= (const RHS & rhs) const
+        {
+          return m_value >= rescale(rhs,1);
+        }
+
+        template<typename RHS_TYPE, unsigned long RHS_SCALE>
+        constexpr bool operator >= (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+        {
+          return (static_cast<t_DoubleWidth>(m_value) * RHS_SCALE) >= \
+              (static_cast<typename FixedPoint<RHS_TYPE, RHS_SCALE>::t_DoubleWidth>(rhs.m_value) * SCALE);
+        }
+
+#ifdef  _GLIBCXX_OSTREAM
+      friend std::ostream& operator<< <TYPE,SCALE>(std::ostream& stream, const FixedPoint& fp);
+#endif
+
+      };
+
+#ifdef  _GLIBCXX_OSTREAM
+      template<typename TYPE, unsigned long SCALE>
+      std::ostream& operator<<(std::ostream& stream, const FixedPoint<TYPE,SCALE>& fp)
+      {
+        return (stream << static_cast<double>(fp.m_value) / SCALE);
+      }
+#endif
+
+      template<typename TYPE>
+      class Complex;
+
+#ifdef  _GLIBCXX_OSTREAM
+      template<typename TYPE>
+      std::ostream& operator << (std::ostream& stream, const Complex<TYPE> &cp);
+#endif
+
+      template<typename TYPE>
+      class Complex
+      {
+      private:
+         TYPE m_real;
+         TYPE m_imag;
+      public:
+         constexpr Complex() {};
+
+         constexpr Complex(const Complex & cp) :
+           m_real(cp.m_real), m_imag(cp.m_imag) {};
+
+         constexpr Complex(const TYPE & real, const TYPE & imag) :
+           m_real(real), m_imag(imag) {};
+
+         template<typename RHS>
+         Complex & operator = (const RHS & rhs)
+         {
+           m_real = rhs;
+           m_imag = 0;
+
+           return *this;
+         }
+
+         template<typename RHS_TYPE>
+         Complex & operator = (const Complex<RHS_TYPE> & rhs)
+         {
+           m_real = rhs.m_real;
+           m_imag = rhs.m_imag;
+           return *this;
+         }
+
+         template<typename RHS>
+         constexpr Complex operator* (const RHS & rhs) const
+         {
+           return {m_real * rhs, m_imag * rhs};
+         }
+
+         template<typename RHS_TYPE>
+         constexpr Complex operator* (const Complex<RHS_TYPE> & rhs) const
+         {
+           return {m_real * rhs.m_real - m_imag * rhs.m_imag,
+                   m_real * rhs.m_imag + m_imag * rhs.m_real};
+         }
+
+         template<typename RHS>
+         constexpr Complex operator/ (const RHS & rhs) const
+         {
+           return {m_real / rhs, m_imag / rhs};
+         }
+
+         template<typename RHS_TYPE>
+         constexpr Complex operator/ (const Complex<RHS_TYPE> & rhs) const
+         {
+           return {(m_real * rhs.m_real + m_imag * rhs.m_imag) /
+                   (rhs.m_real * rhs.m_real + rhs.m_imag * rhs.m_imag),
+                   (m_imag * rhs.m_real - m_real * rhs.m_imag) /
+                   (rhs.m_real * rhs.m_real + rhs.m_imag * rhs.m_imag)};
+         }
+         template<typename RHS>
+         constexpr Complex operator+ (const RHS & rhs) const
+         {
+           return {m_real + rhs, m_imag};
+         }
+
+         template<typename RHS_TYPE>
+         constexpr Complex operator + (const Complex<RHS_TYPE> & rhs) const
+         {
+           return {m_real + rhs.m_real, m_imag + rhs.m_imag};
+         }
+
+         template<typename RHS>
+         constexpr Complex operator- (const RHS & rhs) const
+         {
+           return {m_real - rhs, m_imag};
+         }
+
+         template<typename RHS_TYPE>
+         constexpr Complex operator - (const Complex<RHS_TYPE> & rhs) const
+         {
+           return {m_real - rhs.m_real, m_imag - rhs.m_imag};
+         }
+#ifdef  _GLIBCXX_OSTREAM
+         friend std::ostream& operator << <TYPE>(std::ostream& stream, const Complex &cp);
+#endif
+      };
+
+#ifdef  _GLIBCXX_OSTREAM
+      template<typename TYPE>
+      std::ostream& operator<<(std::ostream& stream, const Complex<TYPE>& cp)
+      {
+        if (cp.m_imag >= 0)
+          return (stream << cp.m_real << "+i" << cp.m_imag);
+        else
+          return (stream << cp.m_real << "-i" << (-cp.m_imag));
+      }
+#endif
 
     }
   }
