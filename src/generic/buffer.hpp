@@ -116,6 +116,15 @@ namespace Platform {
       constexpr bool operator != (const self_type &rhs) {return this->_data != rhs._data;}
       self_type & operator ++ () {_data++; return *this;}
       self_type operator ++ (int) {return self_type(_data++);}
+
+      self_type operator + (size_t count) const {
+        const Type *data = _data + count;
+
+        if (data < _data)
+          data = reinterpret_cast<Type*>(~0);
+
+        return {data};
+      }
     };
 
 
