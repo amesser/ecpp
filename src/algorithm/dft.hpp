@@ -36,11 +36,6 @@
 #include <util/indices.hpp>
 #include <generic/buffer.hpp>
 
-//#include <math.h>
-
-static constexpr double _builtin_cos(double arg) {return arg / 200;}
-static constexpr double _builtin_sin(double arg) {return arg / 200;}
-
 namespace Platform {
   namespace Algorithm {
     namespace DFT {
@@ -79,13 +74,16 @@ namespace Platform {
       class Radix2DFT
       {
       public:
+        static constexpr double        normalization() { return 1.0 / 2.0; }
         static constexpr unsigned long m_power = POWER;
         static constexpr unsigned long m_bins  = (0x1 << POWER);
 
         typedef Platform::Util::Datatypes::Complex<TYPE> t_Type;
 
-        typedef RamBuffer<m_bins/2, t_Type> FactorArrayType;
+        typedef RamBuffer<m_bins/2, t_Type>  FactorArrayType;
+        typedef RamBuffer<m_bins/2, uint8_t> DescrambleArrayType;
 
+        /* class to generate the dft factors. This includes normalization!!! */
         template<typename MATH>
         class
         w {
@@ -94,7 +92,7 @@ namespace Platform {
 
           constexpr t_Type operator [] (unsigned long k) const
           {
-            return {MATH::cos(2 * MATH::m_pi * k / m_bins), -MATH::sin(2 * MATH::m_pi * k/ m_bins)};
+            return {  MATH::cos(2 * MATH::m_pi * k / m_bins), -MATH::sin(2 * MATH::m_pi * k/ m_bins)};
           }
 
           template<std::size_t... Is>
@@ -104,6 +102,26 @@ namespace Platform {
           }
 
           constexpr FactorArrayType asArray() const {
+            return this->asArray_real(build_indices<m_bins/2>());
+          }
+        };
+
+        class
+        descramble {
+        public:
+          constexpr descramble() {};
+
+          constexpr uint8_t operator [] (uint8_t idx) const {
+            return reverseBits<POWER>(idx);
+          }
+
+          template<std::size_t... Is>
+          constexpr DescrambleArrayType asArray_real(indices<Is...>) const
+          {
+            return { { (*this)[Is]...,}};
+          }
+
+          constexpr DescrambleArrayType asArray() const {
             return this->asArray_real(build_indices<m_bins/2>());
           }
         };
@@ -122,11 +140,11 @@ namespace Platform {
 
 
             do {
-              auto a = data[offset];
-              auto b = data[offset + delta];
+              auto a = data[offset] * TYPE(0.5);
+              auto b = data[offset + delta] * TYPE(0.5);
 
-              data[offset] = (a + b) / 2;
-              data[offset+delta] = ((a - b)*w) / 2;
+              data[offset]       =  (a + b);
+              data[offset+delta] =  (a - b) * w;
 
               t_index double_delta = 2*delta;
               offset += double_delta;
