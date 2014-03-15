@@ -42,8 +42,9 @@ namespace Platform {
       static constexpr double m_pi    = M_PI;
       static constexpr double m_sqrt2 = 1.4142135623730951;
 
-      static constexpr double sin(double arg) { return ::std::sin(arg); }
-      static constexpr double cos(double arg) { return ::std::cos(arg); }
+      static constexpr double sin(double arg)  { return ::std::sin(arg); }
+      static constexpr double cos(double arg)  { return ::std::cos(arg); }
+      static constexpr double sqrt(double arg) { return ::std::sqrt(arg); }
     };
   }
 };
