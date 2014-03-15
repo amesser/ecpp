@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 namespace std {
-  typedef unsigned int size_t;
+  typedef __SIZE_TYPE__ size_t;
 }
 
 namespace Platform {
@@ -173,6 +173,12 @@ namespace Platform {
           return {static_cast<t_DoubleWidth>(m_value) * RHS_SCALE / rhs.m_value, SCALE};
         }
 
+        template<typename RHS>
+        constexpr FixedPoint operator + (const RHS & rhs) const
+        {
+          return { m_value + rescale(rhs, 1), SCALE};
+        }
+
         template<typename RHS_TYPE, unsigned long RHS_SCALE>
         constexpr FixedPoint operator + (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
         {
@@ -196,6 +202,25 @@ namespace Platform {
           return {-m_value,SCALE};
         }
 
+        FixedPoint operator -- (int)
+        {
+          TYPE bck = m_value;
+          m_value -= rescale(1,1);
+
+          return { bck, SCALE};
+        }
+
+        constexpr FixedPoint operator >> (size_t shiftw) const
+        {
+          return {m_value >> shiftw,SCALE};
+        }
+
+        template<typename RHS>
+        constexpr bool operator > (const RHS & rhs) const
+        {
+          return m_value > rescale(rhs,1);
+        }
+
         template<typename RHS>
         constexpr bool operator >= (const RHS & rhs) const
         {
@@ -208,6 +233,21 @@ namespace Platform {
           return (static_cast<t_DoubleWidth>(m_value) * RHS_SCALE) >= \
               (static_cast<typename FixedPoint<RHS_TYPE, RHS_SCALE>::t_DoubleWidth>(rhs.m_value) * SCALE);
         }
+
+        template<typename RHS>
+        constexpr bool operator < (const RHS & rhs) const
+        {
+          return m_value < rescale(rhs,1);
+        }
+
+        template<typename RHS>
+        constexpr bool operator <= (const RHS & rhs) const
+        {
+          return m_value <= rescale(rhs,1);
+        }
+
+      template<typename FRIEND_TYPE, unsigned long FRIEND_SCALE>
+      friend class FixedPoint;
 
 #ifdef  _GLIBCXX_OSTREAM
       friend std::ostream& operator<< <TYPE,SCALE>(std::ostream& stream, const FixedPoint& fp);
@@ -313,6 +353,20 @@ namespace Platform {
          {
            return {m_real - rhs.m_real, m_imag - rhs.m_imag};
          }
+
+         constexpr Complex conjugate () const
+         {
+           return {m_real , - m_imag};
+         }
+
+         constexpr Complex operator >> (size_t shiftw) const
+         {
+           return {m_real >> shiftw, m_imag >> shiftw};
+         }
+
+         constexpr TYPE real() const { return m_real;}
+         constexpr TYPE imag() const { return m_imag;}
+
 #ifdef  _GLIBCXX_OSTREAM
          friend std::ostream& operator << <TYPE>(std::ostream& stream, const Complex &cp);
 #endif
