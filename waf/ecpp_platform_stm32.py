@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# ecpp library build script
+# STM32 microcontroller build support
 #
-# Copyright 2013 Andreas Messer <andi@bastelmap.de>
+# Copyright 2014 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
 #
@@ -33,16 +33,48 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-def build(bld):
-    for id,env in bld.all_envs.items():
-        if env['ECPP_BUILDLIB']:
-          bld.ecpp_build( 
-              id       = id,
-              target   = 'ecpp_%s' % env['DEVICE'].lower(),
-              source   = ['common/syscalls.cc'],
-              includes = ['.'],
-              features = 'cxx cxxstlib'
-          )
+from waflib.Configure import conf
+import os.path
 
+stm32_cpu = {
+  'stm32f405' :   ('-mcpu=cortex-m4', '-mthumb'),
+}
 
-   
+@conf
+def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
+    global stm32_cpu
+
+    ldscript = 'device_%s.ld' % device
+    
+    flags = stm32_cpu[device]
+
+    envname = 'device_%s' % device
+
+    conf.load('ecpp_toolchain')
+    conf.ecpp_setuptoolchain('arm')
+
+    create = envname not in conf.all_envs
+    conf.setenv(envname, conf.env)
+
+    if create:      
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        conf.env.append_value(x, flags)
+
+      conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
+
+      ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript))
+
+      if ldscript:
+        conf.env['LINKERSCRIPT'] = ldscript.abspath()
+
+      conf.env['DEVICE'] = device
+
+      # Mark this env to build a ecpp library for
+      conf.env['ECPP_BUILDLIB'] = True
+      conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
+
+      # new libc needs ecpp library for support code!
+      conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
+      conf.env['STLIB_gcc'] = ['gcc']
+      
+      

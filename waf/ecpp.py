@@ -82,6 +82,7 @@ def ecpp_build(bld, id, **kw):
     features.extend(env['ECPP_FEATURES'])
 
     kw['features'] = features
+
     bld(env=env,**kw)
 
 def configure(conf):

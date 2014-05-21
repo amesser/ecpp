@@ -1,15 +1,32 @@
-Toolchain
-=========
+GCC ARM Toolchain
+=================
 
-The following section will give a very brief introduction on
-how to build your on gcc toolchain for cross compiling your
-embedded software. First of all get the required software packages
+The following section will guide you in the creation of a gcc based toolchain for
+ARM architecture. First of all get the required software packages from the
+following locations. You might want to use the most recent versions
 
 - binutils http://www.gnu.org/software/binutils
 - gcc http://gcc.gnu.org
 - newlib http://sourceware.org/newlib/
 - gdb http://www.gnu.org/software/gdb
 - openocd http://sourceforge.net/projects/openocd
+
+
+Preliminary
+-----------
+
+While it is possible to create a toolchain for exactly one arm instruction set, 
+this howto concentrates on the creation of a toolchain suitable for different arm
+processors. This is called `multilib`. In the default multilib setup, the gcc will 
+only build support libraries for `arm` and `thumb` instruction set while gcc itself
+will support any arm architecture. This will likely cause problems when compiling code
+for newer arm cpus which use `thumb2`. In that case gcc will create thumb2 for your 
+own source code but will link it against thumb mode libgcc and libc. As a result the 
+object code contains invalid instructions and the programm will not run. Thus it is required
+to modify the file ``gcc/config/arm/t-arm-elf`` in order to enable additional
+libraries for newer targets. 
+
+You might try to use this :download:`t-arm-elf <t-arm-elf>` as starting point.
 
 Preparation
 -----------
@@ -43,7 +60,9 @@ file for our target::
 
   $ tar -xjf binutils-x.x.x.tar.bz2
   $ cd binutils-x.x.x
-  $ ./configure --prefix=${PREFIX} --target=${TARGET}
+  $ ./configure --prefix=${PREFIX} --target=${TARGET} \
+                --enable-multilib \
+                --enable-interwork
   $ make 
   $ make install
   $ cd ..
@@ -56,6 +75,7 @@ For the c++ compiler the c++ standard library will be created
 after the c standard library has been generated in the next step.::
 
   $ tar -xjf gcc-x.x.x.tar.bz2
+  $ cp t-arm-elf gcc-x.x.x/gcc/config/arm/t-arm-elf
   $ mkdir gcc_build
   $ cd gcc_build
   $ ../gcc-x.x.x/configure --prefix=${PREFIX} --target=${TARGET} \
@@ -64,9 +84,11 @@ after the c standard library has been generated in the next step.::
                            --with-newlib \
                            --enable-shared \
                            --enable-softfloat \
+                           --enable-multilib \
                            --enable-interwork \
-                           --with-ld=${PREFIX}/${TARGET}-ld \
-                           --with-as=${PREFIX}/${TARGET}-as
+                           --with-system-zlib \
+                           --with-ld=${PREFIX}/bin/${TARGET}-ld \
+                           --with-as=${PREFIX}/bin/${TARGET}-as
   $ make all-gcc all-target-libgcc
   $ make install-gcc install-target-libgcc
   $ cd ..
@@ -101,7 +123,9 @@ choosen the following settings
                               --disable-newlib-register-fini \
                               --disable-newlib-atexit-alloc \
                               --enable-newlib-multithread \
-                              --disable-newlib-supplied-syscalls
+                              --disable-newlib-supplied-syscalls \
+                              --enable-multilib \
+                              --enable-interwork
   $ make all
   $ make install
   $ cd ..

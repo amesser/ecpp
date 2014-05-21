@@ -1,7 +1,0 @@
-Miscellanous
-============
-
-.. toctree::
-
-   toolchain
-
