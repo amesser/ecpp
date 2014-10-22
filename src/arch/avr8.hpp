@@ -98,7 +98,6 @@ namespace Platform {
       template<size_t Count, typename Type = uint8_t>
       using EEPROMBuffer  = ::Platform::Buffer::Buffer<Count, Type, EEPROMBufferBase<Count,Type> >;
 
-
       template<typename Init, template <size_t, typename> class Storage>
       class ConstantArrayBuffer{};
 
@@ -126,7 +125,6 @@ namespace Platform {
       template<typename Init>
       const typename ConstantArrayBuffer<Init, EEPROMBuffer>::Type EEMEM
         ConstantArrayBuffer<Init, EEPROMBuffer>::value = ConstantArrayBuffer<Init, EEPROMBuffer>::Type(Init());
-
 
       template<typename TYPE>
       constexpr TYPE max(const TYPE & a, const TYPE & b) {
@@ -364,7 +362,7 @@ namespace Platform {
 
 
   };
-}
+};
 
 
 #endif /* AVR8_HPP_ */
