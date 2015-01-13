@@ -112,6 +112,7 @@ namespace Platform {
       constexpr ConstBufferIterator(const Type *data) : _data(data) {}
 
       const Type & operator * () const {return *_data;}
+
       constexpr bool operator == (const self_type &rhs) {return this->_data == rhs._data;}
       constexpr bool operator != (const self_type &rhs) {return this->_data != rhs._data;}
       self_type & operator ++ () {_data++; return *this;}
