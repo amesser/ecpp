@@ -37,7 +37,7 @@ from waflib.Configure import conf
 import os.path
 
 stm32_cpu = {
-  'stm32f405' :   ('-mcpu=cortex-m4', '-mthumb'),
+  'stm32f405' :   ('-mcpu=cortex-m4', '-mthumb',  '-mthumb-interwork'),
 }
 
 @conf
@@ -59,6 +59,7 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
     if create:      
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, flags)
+        conf.env.append_value(x, ['-Os'])
 
       conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
@@ -75,6 +76,6 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
 
       # new libc needs ecpp library for support code!
       conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
-      conf.env['STLIB_gcc'] = ['gcc']
+      conf.env['STLIB_gcc'] = ['gcc', 'c']
       
       

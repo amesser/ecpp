@@ -169,6 +169,13 @@ SECTIONS
   } >SRAM
   _edata = .;
   PROVIDE (edata = .);
+  
+  __exidx_start = .;
+  .ARM.exidx   : { 
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*) 
+  } >SRAM
+  __exidx_end = .;
+
 
   /* bss segment */
   __bss_start = .;

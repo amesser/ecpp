@@ -32,9 +32,13 @@
 #ifndef VAMATH_HPP_
 #define VAMATH_HPP_
 
+#include <cstddef>
+
 namespace Platform {
   namespace Util {
     namespace VaMath {
+      using namespace ::std;
+
       template<typename ...Args>
       constexpr uint8_t sum(Args const & ...args)
       {

@@ -77,8 +77,8 @@ def ecpp_setuptoolchain(conf, arch):
           conf.find_program(['objcopy'], var='OBJCOPY')
           conf.find_program(['objdump'], var='OBJDUMP')
 
-          conf.env.append_value('CFLAGS',    ['-Wall'])
-          conf.env.append_value('CXXFLAGS',  ['-std=c++11','-Wall'])
+          conf.env.append_value('CFLAGS',    ['-g', '-Wall'])
+          conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000'])
         except conf.errors.ConfigurationError:
           conf.env.revert()
         else:

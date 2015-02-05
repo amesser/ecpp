@@ -41,6 +41,7 @@ def build(bld):
               target   = 'ecpp_%s' % env['DEVICE'].lower(),
               source   = ['common/syscalls.cc'],
               includes = ['.'],
+              export_includes = [bld.path],
               features = 'cxx cxxstlib'
           )
 
