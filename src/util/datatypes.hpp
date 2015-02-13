@@ -32,7 +32,7 @@
 #ifndef DATATYPES_HPP_
 #define DATATYPES_HPP_
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace Platform {
   namespace Util {

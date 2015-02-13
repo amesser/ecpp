@@ -32,7 +32,7 @@
 #ifndef VAMATH_HPP_
 #define VAMATH_HPP_
 
-#include <cstddef>
+#include <stddef.h>
 
 namespace Platform {
   namespace Util {

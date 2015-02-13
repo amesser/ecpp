@@ -38,23 +38,23 @@
 namespace Platform {
   namespace Util {
 
-    template<std::size_t... Is>
+    template<size_t... Is>
     struct indices {
-      static constexpr std::size_t count() {return 0;};
+      static constexpr size_t count() {return 0;};
     };
 
-    template<std::size_t N, std::size_t... Is>
+    template<size_t N, size_t... Is>
     struct indices<N, Is...> {
-      static constexpr std::size_t count() {return 1 + indices<Is...>::count();}
+      static constexpr size_t count() {return 1 + indices<Is...>::count();}
     };
 
-    template <std::size_t... Is>
+    template <size_t... Is>
     struct build_indices {};
 
-    template <std::size_t N, std::size_t... Is>
+    template <size_t N, size_t... Is>
     struct build_indices<N, Is...> : build_indices<N-1, N-1, Is...> {};
 
-    template <std::size_t... Is>
+    template <size_t... Is>
     struct build_indices<0, Is...> : indices<Is...> {};
   }
 }
