@@ -32,15 +32,12 @@
 #ifndef DATATYPES_HPP_
 #define DATATYPES_HPP_
 
-#include <stdint.h>
-
-namespace std {
-  typedef __SIZE_TYPE__ size_t;
-}
+#include <cstdint>
 
 namespace Platform {
   namespace Util {
     namespace Datatypes {
+      using namespace ::std;
 
       template<unsigned int BYTES>
       class UnsignedIntType { public: typedef UnsignedIntType<BYTES + 1> Type; };
@@ -128,9 +125,13 @@ namespace Platform {
       public:
         constexpr FixedPoint() {};
 
+        constexpr FixedPoint(const FixedPoint<TYPE,SCALE> &init) :
+          m_value( init.m_value) {};
+
         template<typename INIT>
         constexpr FixedPoint(const INIT &value, const unsigned long & scale = 1) :
           m_value( rescale(value,scale)) {};
+
 
         template<typename CAST>
         operator CAST () const {return static_cast<CAST>(m_value) / SCALE;}
@@ -254,6 +255,7 @@ namespace Platform {
 #endif
 
       };
+
 
 #ifdef  _GLIBCXX_OSTREAM
       template<typename TYPE, unsigned long SCALE>
