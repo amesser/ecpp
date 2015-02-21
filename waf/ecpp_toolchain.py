@@ -61,10 +61,9 @@ def ecpp_setuptoolchain(conf, arch):
     arch = arch.lower()
     envname = 'toolchain_%s' % arch
 
-    create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-    
-    if create:
+    if envname not in conf.all_envs:
+      conf.setenv(envname, conf.env)
+      
       for prefix in tool_prefixes[arch]:
         try:
           conf.env.stash()
@@ -85,4 +84,6 @@ def ecpp_setuptoolchain(conf, arch):
           break
       else:
         conf.fatal('Could not find a valid toolchain for "%s".' % arch)
+    else:
+      conf.setenv(envname)
 
