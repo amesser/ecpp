@@ -33,6 +33,7 @@
 #define DATATYPES_HPP_
 
 #include <stdint.h>
+#include <stddef.h>
 
 namespace Platform {
   namespace Util {
