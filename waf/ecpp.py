@@ -67,7 +67,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
             func = getattr(conf,'ecpp_setupbuild_%s_%s' % (k,v),None)
             if func:
                 func(**dict(kw))
-                break    
+                break
 
     conf.setenv(envname,conf.env)
     # override build flag

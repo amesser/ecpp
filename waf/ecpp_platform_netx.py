@@ -37,11 +37,14 @@ from waflib.Configure import conf
 import os.path
 
 netx_cpu = {
-  'netx50' :   'arm966e-s',
+  'netx50'  :   'arm966e-s',
+  'netx100' :   'arm926ej-s',
+  'netx500' :   'arm926ej-s',
 }
 
 netx_boards = {
   'netstick' : 'netx50',
+  'nxsb100'  : 'netx500',
 }
 
 @conf
@@ -65,7 +68,13 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
 
     if create:      
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
-        conf.env.append_value(x, ['-mthumb', '-mthumb-interwork','-mtune=%s' % cpu])
+        conf.env.append_value(x, ['-mthumb-interwork','-mtune=%s' % cpu])
+
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        conf.env.append_value(x + "_compile_thumb", ['-mthumb'])
+
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+        conf.env.append_value(x + "_compile_arm", ['-marm'])
 
       conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
@@ -82,6 +91,7 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
 
       # new libc needs ecpp library for support code!
       conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
-      conf.env['STLIB_gcc'] = ['gcc']
+      # lib gcc needs memcpy from libc
+      conf.env['STLIB_gcc'] = ['gcc', 'c']
       
       
