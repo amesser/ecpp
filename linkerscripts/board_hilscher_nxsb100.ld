@@ -184,14 +184,14 @@ SECTIONS
   /* bss segment */
   __bss_start = .;
   __bss_start__ = .;
-  .sbss      :
+  .sbss (NOLOAD):
   {
     *(.dynsbss)
     *(.sbss)
     *(.sbss.*)
     *(.scommon)
   } >SDRAM
-  .bss       :
+  .bss (NOLOAD):
   {
    *(.dynbss)
    *(.bss)
@@ -208,7 +208,7 @@ SECTIONS
   PROVIDE (end = .);
 
   /* stacks */
-  .stack ALIGN(0x4000) : { 
+  .stack ALIGN(0x4000) (NOLOAD): { 
     *(.stack)
     LONG(0);
     . = ALIGN(0x4000);

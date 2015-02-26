@@ -53,10 +53,9 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
     conf.load('ecpp_toolchain')
     conf.ecpp_setuptoolchain('arm')
 
-    create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-
-    if create:      
+    if envname not in conf.all_envs:
+      conf.setenv(envname, conf.env)
+      
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, flags)
         conf.env.append_value(x, ['-Os'])
@@ -77,5 +76,7 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
       # new libc needs ecpp library for support code!
       conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
       conf.env['STLIB_gcc'] = ['gcc', 'c']
+    else:
+      conf.setenv(envname)
       
       

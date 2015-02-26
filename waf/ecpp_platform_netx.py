@@ -33,8 +33,12 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
+from waflib.TaskGen   import feature, after_method
+from waflib.Task      import Task, compile_fun
 from waflib.Configure import conf
+from waflib.Context   import STDOUT, BOTH
 import os.path
+import struct
 
 netx_cpu = {
   'netx50'  :   'arm966e-s',
@@ -63,12 +67,11 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
     conf.load('ecpp_toolchain')
     conf.ecpp_setuptoolchain('arm')
 
-    create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-
-    if create:      
+    if envname not in conf.all_envs:
+      conf.setenv(envname, conf.env)
+      
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
-        conf.env.append_value(x, ['-mthumb-interwork','-mtune=%s' % cpu])
+        conf.env.append_value(x, ['-mthumb-interwork','-mcpu=%s' % cpu])
 
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x + "_compile_thumb", ['-mthumb'])
@@ -94,4 +97,156 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
       # lib gcc needs memcpy from libc
       conf.env['STLIB_gcc'] = ['gcc', 'c']
       
+      conf.env.append_value('ECPP_FEATURES',['netx-firmware'])
+    else:
+      conf.setenv(envname)
+
+class netx_bootimage(object):
+    __slots__ = """
+      magiccookie
+      memcontrol
+      applentrypoint
+      applchecksum
+      applsize
+      applloadaddress
+      signature
+      control0
+      control1
+      control2
+      control3
+      control4
+      asicctrl
+      param
+      source
+      bootchecksum
+      binary
+    """.split()
+
+    def encode(self):
+        # enforce some values
+        self.signature = 0x5854454E
+        self.asicctrl  = 1
+
+        fields = [getattr(self,x,0) for x in self.__slots__[0:-1]]
+        # compute boot block checksum
+        fields[-1] = (sum(fields[0:-1]) * -1) 
+        fields = [x & 0xFFFFFFFF for x in fields]
+        
+        bootblock = struct.pack("<16L", *fields)
+
+        return bootblock + self.binary
+
+    SPI_SPEED = dict((v,i << 1) for i,v in enumerate([
+         50000,
+        100000,
+        200000,
+        500000,
+       1000000,
+       1250000,
+       2000000,
+       2500000,
+       3333300,
+       5000000,
+      10000000,
+      12500000,
+      16666600,
+      25000000,
+    ]))
+
+    SPIFLASH = {
+        "magiccookie" : 0xF8BEAF00,
+        "memcontrol"  : SPI_SPEED[5000000],
+        "source"      : 2,
+    }
+
+    def setBootSource(self,source, **kw):
+      for k,v in source.items():
+        setattr(self,k,v)
+
+      for k,v in kw.items():
+        setattr(self,k,v)
+
+    # some default timing values for typical sdram 
+    # device 
+    SDRAM = {
+        "control0" : 0x030D0001,
+        "control1" : 0x03C23251,
+    }
+
+    setBootDestination = setBootSource
+
+    def setApplication(self,binary, loadaddress, entrypoint):
+        padding = [ "", "\x00\x00\x00", "\x00\x00", "\x00"][len(binary) % 4]
+
+        binary = binary + padding
+        self.binary = binary
+        self.applsize = len(binary) / 4
+
+        offset   = 0
+        checksum = 0
+        while offset < len(binary):
+            value, = struct.unpack_from("<L", binary,offset)
+            checksum += value
+            offset += 4
+
+        self.applchecksum = checksum
+        self.applloadaddress  = loadaddress
+        self.applentrypoint   = entrypoint
+
+class netx_rom(Task):
+    def run(self):
+        elfnode, binnode = self.inputs
+        fwnode, = self.outputs
+
+        bld = self.generator.bld
+        env = {"LANG" : "C"}
+        
+        symbols = bld.cmd_and_log([self.env['NM'], elfnode.abspath()], 
+          env=env,  output=STDOUT, quiet=BOTH)
+
+        symbols = [line.split(None,2) for line in symbols.splitlines()]
+        symbols = dict((x[2],int(x[0],16)) for x in symbols if len(x) == 3)
+
+        sections = bld.cmd_and_log([self.env['OBJDUMP'], "-w", "-h", elfnode.abspath()], 
+          env=env, output=STDOUT, quiet=BOTH)
+
+        sections = sections.splitlines()
+
+        while sections:
+            l = sections.pop(0)
+            if l.lower().startswith("idx"):
+                break
+          
+        lma = None
+
+        for line in sections:
+          cols = line.strip().split(None,7)
+          flags = cols[7].lower().translate(None," \t").split(",")
+
+          if "load" in flags:
+              load = int(cols[4], 16)
+              lma = min(lma or load, load)
+
+        bootimg = netx_bootimage()
+        bootimg.setBootSource(bootimg.SPIFLASH)
+        bootimg.setBootDestination(bootimg.SDRAM)
+        bootimg.setApplication(binnode.read('rb'), 
+          lma,symbols["_start"])
+
+        fwnode.write(bootimg.encode(),'wb')
+
+
+@feature('netx-firmware')
+@after_method('apply_link')
+def generate_netx_firmware(self):
+  if 'cprogram' in self.features or 'cxxprogram' in self.features:
+      elf_node      = self.link_task.outputs[0]
+      elf_node_copy = elf_node.change_ext("-cpy.elf")
       
+      self.create_task('copy',elf_node,elf_node_copy)
+      self.strip_task = self.create_task('strip',elf_node_copy,None)
+    
+      tsk = self.create_task('binary', [elf_node_copy], [elf_node_copy.change_ext('.bin')])
+      tsk.set_run_after(self.strip_task)
+
+      rom_tsk = self.create_task('netx_rom', [elf_node_copy, tsk.outputs[0]], [elf_node_copy.change_ext('.rom')])

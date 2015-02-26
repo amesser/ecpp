@@ -45,6 +45,11 @@ class ihex(Task.Task):
     run_str = '${OBJCOPY} -O ihex ${OBJCOPY_FLAGS} ${SRC} ${TGT}'
     vars    = ['OBJDUMP_FLAGS']
 
+class binary(Task.Task):
+    color   = 'GREEN'
+    run_str = '${OBJCOPY} -O binary ${OBJCOPY_FLAGS} ${SRC} ${TGT}'
+    vars    = ['OBJDUMP_FLAGS']
+
 class listing(Task.Task):
     color   = 'GREEN'
     run_str = '${OBJDUMP} -D ${SRC} > ${TGT}'
@@ -53,6 +58,12 @@ class compilelisting(c.c):
         "generate a compiler assembler listing"
         run_str = '${CXX} -Wa,-adhln -g ${ARCH_ST:ARCH} ${CXXFLAGS} ${CPPFLAGS} ${FRAMEWORKPATH_ST:FRAMEWORKPATH} ${CPPPATH_ST:INCPATHS} ${DEFINES_ST:DEFINES} ${CXX_SRC_F}${SRC} -o/dev/null >${TGT}'
 
+class copy(Task.Task):
+    color   = 'GREEN'
+    def run(self):
+        for i,o in zip(self.inputs,self.outputs):
+            o.write(i.read("rb"),"wb")
+        
 @feature('listings')
 @after_method('apply_link')
 def generate_listings(self):
