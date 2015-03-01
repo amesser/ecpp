@@ -322,6 +322,16 @@ namespace Platform {
   }
 }
 
+namespace Platform {
+  namespace Util {
+    namespace Datatypes {
+      template<unsigned int Count, typename Type, typename Base >
+      constexpr auto ElementCount(const  ::Platform::Buffer::Buffer<Count,Type,Base>&) -> typename UnsignedIntTypeEstimator<Count>::Type {
+        return UnsignedIntTypeEstimator<Count>::Value;
+      };
 
+    }
+  }
+}
 
 #endif /* BUFFER_HPP_ */

@@ -166,10 +166,6 @@ namespace Platform {
 
       self_type operator + (size_t count) const {
         const TYPE *data = _data + count;
-
-        if (data < _data)
-          data = reinterpret_cast<TYPE*>(~0);
-
         return {data};
       }
 

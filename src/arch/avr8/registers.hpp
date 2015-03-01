@@ -1,5 +1,4 @@
-/*
- *  Copyright 2013 Andreas Messer <andi@bastelmap.de>
+/*  Copyright 2015 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,34 +28,37 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef INDICES_HPP_
-#define INDICES_HPP_
+#ifndef REGISTERS_HPP_
+#define REGISTERS_HPP_
 
-#include <util/datatypes.hpp>
-#include <util/vamath.hpp>
+#include <stdint.h>
+#include <avr/io.h>
 
 namespace Platform {
-  namespace Util {
-    typedef unsigned int indices_type;
+  namespace Architecture {
+    namespace AVR8 {
+      class RegisterConfig {
+      public:
+        uint8_t _u8RegNr;
+        uint8_t _u8RegValue;
 
-    template<indices_type... Is>
-    struct indices {
-      static constexpr indices_type count() {return 0;};
-    };
+        constexpr RegisterConfig(volatile uint8_t &reg, const uint8_t value) :
+             _u8RegNr{static_cast<uint8_t>(_SFR_IO_ADDR(reg))}, _u8RegValue{value} {}
 
-    template<indices_type N, indices_type... Is>
-    struct indices<N, Is...> {
-      static constexpr indices_type count() {return 1 + indices<Is...>::count();}
-    };
+        constexpr RegisterConfig(const RegisterConfig &init) :
+            _u8RegNr(init._u8RegNr), _u8RegValue{init._u8RegValue} {}
 
-    template <indices_type... Is>
-    struct build_indices {};
+            constexpr RegisterConfig() :
+                _u8RegNr(0), _u8RegValue{0} {}
 
-    template <indices_type N, indices_type... Is>
-    struct build_indices<N, Is...> : build_indices<N-1, N-1, Is...> {};
+        void writeRegister() const {
+          const uint8_t ioreg = this->_u8RegNr;
+          const uint8_t value = this->_u8RegValue;
 
-    template <indices_type... Is>
-    struct build_indices<0, Is...> : indices<Is...> {};
+          _SFR_IO8(ioreg) = value;
+        }
+      };
+    }
   }
-}
-#endif /* INDICES_HPP_ */
+};
+#endif /* REGISTERS_HPP_ */

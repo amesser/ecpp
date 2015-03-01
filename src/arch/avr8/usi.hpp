@@ -33,11 +33,34 @@
 #ifndef USI_HPP_
 #define USI_HPP_
 
-#include <avr/io.h>
+#include <arch/avr8/registers.hpp>
 
 namespace Platform {
   namespace Architecture {
     namespace AVR8 {
+     template<uint8_t MODE>
+     class USIParameters {};
+
+     template<>
+     class USIParameters<0>
+     {
+     public:
+       static constexpr RegisterConfig RegisterInit = {USICR, _BV(USIWM0) | _BV(USICS1) | _BV(USICLK)};
+     };
+
+     template<>
+     class USIParameters<1>
+     {
+     public:
+       static constexpr RegisterConfig RegisterInit = {USICR, _BV(USIWM0) | _BV(USICS0) | _BV(USICS1) | _BV(USICLK)};
+     };
+
+     template<>
+     class USIParameters<2> : public USIParameters<1> {};
+
+     template<>
+     class USIParameters<3> : public USIParameters<0> {};
+
      class USI {
       public:
         enum UsiMode {
@@ -46,6 +69,9 @@ namespace Platform {
           SPI_MODE2 = 2,
           SPI_MODE3 = 3,
         };
+
+        template<uint8_t MODE>
+        static constexpr const RegisterConfig &  RegisterInit() {return USIParameters<MODE>::RegisterInit;}
 
         static void initialize(const enum UsiMode mode) {
           switch (mode) {
@@ -66,7 +92,7 @@ namespace Platform {
       };
 
       template<unsigned long SPEED>
-      class USISPIMaster : private USI {
+      class USISPIMaster : public USI {
       public:
         static void initialize(const uint8_t mode) {
           switch(mode) {
@@ -100,6 +126,28 @@ namespace Platform {
           } while (0 == (USISR & _BV(USIOIF)));
 
           return USIDR;
+        }
+
+        static void transferData(uint8_t len, uint8_t *data)
+        {
+          uint8_t *end = data + len;
+
+          while(data < end)
+          {
+            USIDR  = *data;
+            USISR  =  0xF0;
+
+            do {
+              USICR |= _BV(USITC);
+
+              if(getDelaySPI() > 0)
+                _delay_loop_1(getDelaySPI());
+
+            } while (0 == (USISR & _BV(USIOIF)));
+
+            *data = USIDR;
+            ++data;
+          }
         }
 
         static uint8_t transferBytes(uint8_t data1, uint8_t data2)
