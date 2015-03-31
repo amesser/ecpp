@@ -72,6 +72,10 @@ namespace Platform {
       class EEPROMBufferBase : public BufferBase<Count, Type>
       {
       public:
+        typedef ConstBufferIterator<Type, EEPROMBufferBase> const_iterator;
+        typedef BufferIterator<Type, EEPROMBufferBase> iterator;
+
+        typedef EEPROMBufferBase<Count, Type> BaseType;
 
         constexpr EEPROMBufferBase(const Type (& init)[Count]) : BufferBase<Count,Type>(init) {}
       };
@@ -324,6 +328,49 @@ namespace Platform {
       }
       return value;
     }
+
+    template<typename TYPE>
+    class ConstBufferIterator<TYPE, EEPROMBufferBase>
+    {
+    private:
+      const   TYPE *_data;
+    public:
+      typedef ConstBufferIterator<TYPE, EEPROMBufferBase> self_type;
+
+      constexpr ConstBufferIterator() : _data(0) {};
+      constexpr ConstBufferIterator(const TYPE *data) : _data(data) {}
+
+      TYPE operator * () const
+      {
+        TYPE     value;
+
+        uint8_t  cnt = sizeof(TYPE);
+
+        uint8_t  address = reinterpret_cast<uint16_t>(_data);
+        uint8_t  *p      = reinterpret_cast<uint8_t*>(&value);
+
+        while(cnt--)
+        {
+          EEAR  = address;
+          EECR |= 1 << EERE;
+          *(p++) = EEDR;
+        }
+
+        return value;
+      }
+
+      constexpr bool operator == (const self_type &rhs) const {return this->_data == rhs._data;}
+      constexpr bool operator != (const self_type &rhs) const {return this->_data != rhs._data;}
+      constexpr bool operator >  (const self_type &rhs) const {return this->_data > rhs._data;}
+
+      self_type operator + (size_t count) const {
+        const TYPE *data = _data + count;
+        return {data};
+      }
+
+      self_type & operator ++ ()    {_data++; return *this;}
+      self_type   operator ++ (int)  {const TYPE * bck = _data; _data++; return {bck};}
+    };
 
 
     template<>

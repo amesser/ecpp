@@ -55,6 +55,14 @@ namespace ECPP {
         static constexpr uint16_t MaxUnsigned = 0xFFFF;
     };
 
+    template<>
+    class TypeProperties<uint32_t>
+    {
+      public:
+        static constexpr uint32_t MaxSigned   = 0x7FFFFFFF;
+        static constexpr uint32_t MaxUnsigned = 0xFFFFFFFF;
+    };
+
 
     template<unsigned int BYTES>
     class UnsignedIntType { public: typedef UnsignedIntType<BYTES + 1> Type; };
