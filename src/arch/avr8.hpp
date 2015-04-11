@@ -130,15 +130,7 @@ namespace Platform {
       const typename ConstantArrayBuffer<Init, EEPROMBuffer>::Type EEMEM
         ConstantArrayBuffer<Init, EEPROMBuffer>::value = ConstantArrayBuffer<Init, EEPROMBuffer>::Type(Init());
 
-      template<typename TYPE>
-      constexpr TYPE max(const TYPE & a, const TYPE & b) {
-        return (a > b) ? a : b;
-      };
 
-      template<typename TYPE>
-      constexpr TYPE min(const TYPE & a, const TYPE & b) {
-        return (a < b) ? a : b;
-      };
 
 
     }

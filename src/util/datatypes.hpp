@@ -95,11 +95,12 @@ namespace Platform {
         return UnsignedIntTypeEstimator<sizeof(TYPE)>::Value;
       };
 
+#if 0
       template<typename TYPE, unsigned long COUNT>
       constexpr auto ElementCount(const TYPE (& type)[COUNT]) -> typename UnsignedIntTypeEstimator<COUNT>::Type {
         return UnsignedIntTypeEstimator<COUNT>::Value;
       };
-
+#endif
 
       template<typename TYPE, unsigned long SCALE>
       class FixedPoint;
