@@ -48,7 +48,9 @@ def ecpp_setupbuild_platform_native(conf, device, board, platform, arch):
 
     if create:
       for x in 'CFLAGS CXXFLAGS'.split():
-        conf.env.append_value(x, ['-O2', '-g'])
+        conf.env.append_value(x,   ['-mtune=native'])
+        conf.env.append_value(x + "_debug",   ['-O0', '-g'])
+        conf.env.append_value(x + "_release", ['-O2', '-g'])
 
       n = conf.root.find_dir(os.path.join(conf.env['ECPP_DIR'],'src'))
       conf.env.append_value('INCLUDES', n.abspath())

@@ -96,7 +96,7 @@ namespace Platform {
             return {  MATH::cos(2 * MATH::m_pi * k / m_bins), -MATH::sin(2 * MATH::m_pi * k/ m_bins)};
           }
 
-          template<std::size_t... Is>
+          template<size_t... Is>
           constexpr FactorArrayType asArray_real(indices<Is...>) const
           {
             return { { (*this)[Is]...,}};
@@ -116,13 +116,13 @@ namespace Platform {
             return reverseBits<POWER>(idx);
           }
 
-          template<std::size_t... Is>
+          template<size_t... Is>
           constexpr DescrambleArrayTypeHalf asArrayHalf_real(indices<Is...>) const
           {
             return { { (*this)[Is]...,}};
           }
 
-          template<std::size_t... Is>
+          template<size_t... Is>
           constexpr DescrambleArrayTypeFull asArrayFull_real(indices<Is...>) const
           {
             return { { (*this)[Is]...,}};

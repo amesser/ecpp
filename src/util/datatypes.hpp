@@ -252,6 +252,9 @@ namespace Platform {
       template<typename FRIEND_TYPE, unsigned long FRIEND_SCALE>
       friend class FixedPoint;
 
+      template<typename FRIEND_TYPE>
+      friend class Complex;
+
 #ifdef  _GLIBCXX_OSTREAM
       friend std::ostream& operator<< <TYPE,SCALE>(std::ostream& stream, const FixedPoint& fp);
 #endif
@@ -267,8 +270,6 @@ namespace Platform {
       }
 #endif
 
-      template<typename TYPE>
-      class Complex;
 
 #ifdef  _GLIBCXX_OSTREAM
       template<typename TYPE>

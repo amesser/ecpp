@@ -71,6 +71,7 @@ def ecpp_setuptoolchain(conf, arch):
           
           conf.load('gcc')
           conf.load('gxx')
+          conf.load('gas')
 
           conf.find_program(['strip'],   var='STRIP')
           conf.find_program(['objcopy'], var='OBJCOPY')
