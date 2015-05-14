@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-namespace ECPP
+namespace ecpp
 {
   constexpr uint8_t  hton8(uint8_t val)  {return (val);}
   constexpr uint16_t hton16(uint16_t val) {return (val >> 8 | val << 8);}

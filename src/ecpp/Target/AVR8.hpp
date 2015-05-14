@@ -8,7 +8,9 @@
 #ifndef ECPP_TARGET_AVR8_EEPROM_HPP_
 #define ECPP_TARGET_AVR8_EEPROM_HPP_
 
+#include "ecpp/Target/AVR8/IOPort.hpp"
 #include "ecpp/Target/AVR8/Memory.hpp"
+#include "ecpp/Target/AVR8/SPI.hpp"
 #include "ecpp/Target/AVR8/USI.hpp"
 
 

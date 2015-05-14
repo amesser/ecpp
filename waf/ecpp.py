@@ -79,11 +79,18 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 def ecpp_build(bld, id, **kw):
     env = bld.all_envs[id]
     
-    features = Utils.to_list(kw.get('features',[])) 
+    features = Utils.to_list(kw.get('features',[]))[:] 
     features.append('ecpp')
     features.extend(env['ECPP_FEATURES'])
 
+    use = Utils.to_list(kw.get('use',[]))[:] 
+    use.extend(env['ECPP_USE'])
+
+    if kw['target'] in use:
+        use.remove(kw['target'])
+
     kw['features'] = features
+    kw['use']      = use
 
     bld(env=env,**kw)
 

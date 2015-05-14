@@ -36,6 +36,7 @@
 #include <ecpp/Arch/AVR8.hpp>
 #include <ecpp/Datatypes.hpp>
 
+#if defined(USICR)
 namespace ecpp {
    template<uint8_t MODE>
    class USIParameters {};
@@ -173,6 +174,7 @@ namespace ecpp {
         return ~token;
       }
     };
-
 }
+
+#endif
 #endif /* ECPP_TARGET_AVR8_USI_HPP_ */
