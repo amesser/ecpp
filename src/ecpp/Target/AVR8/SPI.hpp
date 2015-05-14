@@ -11,6 +11,7 @@
 #include <ecpp/Arch/AVR8.hpp>
 #include <ecpp/Datatypes.hpp>
 
+#if defined(SPCR)
 namespace ecpp
 {
   template<unsigned int DIVISOR>
@@ -127,7 +128,7 @@ namespace ecpp
 
   };
 };
-
+#endif
 
 
 #endif /* EXTERNALS_ECPP_SRC_ECPP_TARGET_AVR8_SPI_HPP_ */
