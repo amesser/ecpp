@@ -110,6 +110,8 @@ namespace ecpp
     uint8_t m_Minutes;
     uint8_t m_Hours;
   public:
+
+
     uint8_t getSeconds() const {return m_Seconds;}
     uint8_t getMinutes() const {return m_Minutes;}
     uint8_t getHours()   const {return m_Hours;}
@@ -117,6 +119,9 @@ namespace ecpp
     static uint32_t calculateSecondsOfDay(uint8_t Hour, uint8_t Minute, uint8_t Second);
 
     uint32_t getSecondsOfDay() const { return calculateSecondsOfDay(m_Hours, m_Minutes, m_Seconds);}
+
+    static constexpr uint32_t getMaxMonotonic() { return 60UL * 60 * 24 - 1;};
+    uint32_t getMonotonic() const { return getSecondsOfDay();}
 
     void tick()
     {
@@ -147,10 +152,19 @@ namespace ecpp
     {
     protected:
       uint32_t m_Timout;
+
     public:
       uint16_t hasTimedOut(const Time & Time)
       {
-        uint32_t dTime = Time.getSecondsOfDay() - m_Timout;
+        auto wrap = Time::getMaxMonotonic();
+        auto dTime = Time.getMonotonic();
+
+        wrap += 1;
+
+        if(dTime < m_Timout)
+          dTime = dTime + wrap - m_Timout;
+        else
+          dTime = dTime - m_Timout;
 
         /* we hopefully get called at elast once in an hour */
         if (dTime > 3600)
@@ -167,19 +181,22 @@ namespace ecpp
 
       void updateTimeout(uint16_t Hours, uint16_t Minutes, uint16_t Seconds)
       {
-        uint32_t Timeout = Time::calculateSecondsOfDay(Hours, Minutes, Seconds);
+        auto wrap    = Time::getMaxMonotonic();
+        auto Timeout = Time::calculateSecondsOfDay(Hours, Minutes, Seconds);
+
+        wrap += 1;
 
         Timeout += m_Timout;
 
-        while (Timeout > 86400UL)
-          Timeout -= 86400;
+        while (Timeout >= wrap)
+          Timeout -= wrap;
 
         m_Timout = Timeout;
       }
 
       void initTimeout(const Time & time, uint16_t Hours, uint16_t Minutes, uint16_t Seconds)
       {
-        m_Timout = time.getSecondsOfDay();
+        m_Timout = time.getMonotonic();
         updateTimeout(Hours, Minutes, Seconds);
       }
     };
