@@ -16,70 +16,93 @@ namespace ecpp
   class Clock
   {
   private:
-    T _cnt;
+    T Counter;
 
   public:
     template<typename C>
+    C delta(C val)
+    {
+      return val - static_cast<C>(Counter);
+    }
+
+    template<typename C>
+    void advance(C val)
+    {
+      Counter += val;
+    }
+
+    template<typename C>
     void update(C val)
     {
-      const C maskc = ~static_cast<C>(0);
-      const C part  = static_cast<C>(_cnt & maskc);
-
-      if (val != part)
-      {
-        const T maskt = ~static_cast<T>(maskc);
-
-        if (val > part)
-        {
-          _cnt = (_cnt & maskt) + val;
-        }
-        else
-        {
-          const T add = static_cast<T>(maskc) + 1;
-          _cnt = (_cnt & maskt) + add + val;
-        }
-      }
+      advance(delta(val));
     }
 
     constexpr T value()
     {
-      return _cnt;
+      return Counter;
     }
 
     void init(T value)
     {
-      _cnt = value;
+      Counter = value;
     }
-
-    template<typename C, unsigned long TMOUTRANGE = TypeProperties<C>::MaxSigned >
-    class Timer
-    {
-    private:
-      C _tmout;
-    public:
-      C hasTimedOut(const Clock & clock);
-      void updateTimeout(C iv)
-      {
-        _tmout += iv;
-      }
-
-      void init(C iv);
-      void init(const Clock &clock, C iv);
-
-      constexpr C value()
-      {
-        return _tmout;
-      }
-    };
   };
 
-  template<typename T>
-  template<typename C, unsigned long TMOUTRANGE>
-  C Clock<T>::Timer<C,TMOUTRANGE>::hasTimedOut(const Clock & clock)
+  template<typename C>
+  class SimpleTimer
   {
-    const C maskc = ~static_cast<C>(0);
-    const C part  =  static_cast<C>(clock.value() & maskc);
-    C delta = part - _tmout;
+  private:
+    C Counter;
+  public:
+    void start (C timeout)    {Counter = timeout;}
+    void stop  ()             {Counter = 0;}
+    bool hasTimedOut() const  {return 0 == Counter;}
+
+    template<typename T>
+    void update (T TimePassed)
+    {
+      if (TimePassed > Counter)
+      {
+        Counter = 0;
+      }
+      else
+      {
+        Counter = Counter - TimePassed;
+      }
+    }
+  };
+
+  template<typename C, unsigned long TMOUTRANGE = TypeProperties<C>::MaxSigned >
+  class Timer
+  {
+  public:
+  private:
+    C Timeout;
+  public:
+    template<typename CLOCK>
+    C hasTimedOut(const CLOCK & clock);
+
+    void updateTimeout(C iv)
+    {
+      Timeout += iv;
+    }
+
+    void init(C iv);
+
+    template<typename CLOCK>
+    void init(const CLOCK &clock, C iv);
+
+    constexpr C value()
+    {
+      return Timeout;
+    }
+  };
+
+  template<typename C, unsigned long TMOUTRANGE>
+  template<typename T>
+  C Timer<C, TMOUTRANGE>::hasTimedOut(const T & clock)
+  {
+    C delta = clock.value() - Timeout;
 
     if (delta > TMOUTRANGE)
       delta = 0;
@@ -89,18 +112,17 @@ namespace ecpp
     return delta;
   }
 
-  template<typename T>
   template<typename C, unsigned long TMOUTRANGE>
-  void Clock<T>::Timer<C,TMOUTRANGE>::init(const Clock &clock, C iv)
+  template<typename T>
+  void Timer<C, TMOUTRANGE>::init(const T &clock, C iv)
   {
-    _tmout = clock.value() + iv;
+    Timeout = clock.value() + iv;
   }
 
-  template<typename T>
   template<typename C, unsigned long TMOUTRANGE>
-  void Clock<T>::Timer<C,TMOUTRANGE>::init(C iv)
+  void Timer<C, TMOUTRANGE>::init(C iv)
   {
-    _tmout = iv;
+    Timeout = iv;
   }
 
   class Time
