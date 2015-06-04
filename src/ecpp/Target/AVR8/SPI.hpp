@@ -99,7 +99,6 @@ namespace ecpp
     static uint8_t
     transferByte(uint8_t data)
     {
-      _delay_us(10);
       SPDR = data;
       while(0 == (SPSR & _BV(SPIF)));
 
