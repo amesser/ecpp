@@ -42,16 +42,60 @@ namespace ecpp
     AVR_IO_PD4 = 0x34,
     AVR_IO_PD5 = 0x35,
     AVR_IO_PD6 = 0x36,
+    AVR_IO_PD7 = 0x37,
 
   };
 
   template<int PORT>
-  class IOPort {};
+  class IOPortRegisters;
 
-  template<>
-  class IOPort<AVR_IO_PB>
+  template<int PORT>
+  class IOPort;
+
+  template<int PIN>
+  class IOPin : public IOPortRegisters<PIN & 0xF0>
   {
   public:
+    static constexpr uint8_t MASK = 0x01 << (PIN & 0xF);
+
+    static void enableOutput()  __attribute__((always_inline))
+    {
+      *(IOPin::DDR) |=  MASK;
+    }
+
+    static void disableOutput() __attribute__((always_inline))
+    {
+      *(IOPin::DDR) &= ~MASK;
+    }
+
+    static void setOutput()     __attribute__((always_inline))
+    {
+      *(IOPin::PORT) |= MASK;
+    }
+
+    static void clearOutput()   __attribute__((always_inline))
+    {
+      *(IOPin::PORT) &= ~MASK;
+    }
+
+    static bool getOutput() __attribute__((always_inline))
+    {
+      return 0 != (*(IOPin::PORT) & MASK);
+    }
+
+    static bool getInput() __attribute__((always_inline))
+    {
+      return 0 != (*(IOPin::PIN) & MASK);
+    }
+  };
+
+  template<int PORT>
+  class IOPortRegisters {};
+
+  template<>
+  class IOPortRegisters<AVR_IO_PB>
+  {
+  protected:
     static constexpr volatile uint8_t * DDR  = &DDRB;
     static constexpr volatile uint8_t * PIN  = &PINB;
     static constexpr volatile uint8_t * PORT = &PORTB;
@@ -59,9 +103,9 @@ namespace ecpp
 
 #if defined(DDRC)
   template<>
-  class IOPort<AVR_IO_PC>
+  class IOPortRegisters<AVR_IO_PC>
   {
-  public:
+  protected:
     static constexpr volatile uint8_t * DDR  = &DDRC;
     static constexpr volatile uint8_t * PIN  = &PINC;
     static constexpr volatile uint8_t * PORT = &PORTC;
@@ -70,44 +114,48 @@ namespace ecpp
 
 #if defined(DDRD)
   template<>
-  class IOPort<AVR_IO_PD>
+  class IOPortRegisters<AVR_IO_PD>
   {
-  public:
+  protected:
     static constexpr volatile uint8_t * DDR  = &DDRD;
     static constexpr volatile uint8_t * PIN  = &PIND;
     static constexpr volatile uint8_t * PORT = &PORTD;
   };
 #endif
 
-  template<int PIN>
-  class IOPin
+  template<int PORT>
+  class IOPort : public IOPortRegisters<PORT>
   {
   public:
-    static constexpr uint8_t MASK = 0x01 << (PIN & 0xF);
-
-    static void enableOutput()  __attribute__((always_inline))
+    void clearOutputs(uint8_t outputs)
     {
-      *(IOPort<PIN & 0xF0>::DDR) |=  MASK;
+      *(this->PORT) = *(this->PORT) & ~(outputs);
     }
 
-    static void disableOutput() __attribute__((always_inline))
+    void setOutputs(uint8_t outputs)
     {
-      *(IOPort<PIN & 0xF0>::DDR) &= ~MASK;
+      *(this->PORT) = *(this->PORT) | outputs;
     }
 
-    static void setOutput()     __attribute__((always_inline))
+    void updateOutputs(uint8_t outputs, uint8_t mask)
     {
-      *(IOPort<PIN & 0xF0>::PORT) |= MASK;
+
+      *(this->PORT) = (*(this->PORT) & ~(mask)) | outputs;
     }
 
-    static void clearOutput()   __attribute__((always_inline))
+    void operator = (uint8_t out)
     {
-      *(IOPort<PIN & 0xF0>::PORT) &= ~MASK;
+      *(this->PORT) = out;
     }
 
-    static bool getInput()      __attribute__((always_inline))
+    operator uint8_t () const
     {
-      return 0 != (*(IOPort<PIN & 0xF0>::PIN) & MASK);
+      return *(this->PIN);
+    }
+
+    void setDirection(uint8_t direction)
+    {
+      *(this->DDR) = direction;
     }
   };
 }
