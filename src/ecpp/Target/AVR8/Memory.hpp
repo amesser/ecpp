@@ -10,6 +10,7 @@
 
 
 #include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 #include <stdint.h>
 
 namespace ecpp
@@ -23,6 +24,11 @@ namespace ecpp
     void readEEPROM(const void* p)
     {
       eeprom_read_block(this, p, SIZE);
+    }
+
+    void readFlash(const void* p)
+    {
+      memcpy_P(this, p, SIZE);
     }
   };
 
@@ -38,6 +44,11 @@ namespace ecpp
     void readEEPROM(const void* p)
     {
       value = eeprom_read_byte(reinterpret_cast<const uint8_t*>(p));
+    }
+
+    void readFlash(const void *p)
+    {
+      value = pgm_read_byte(reinterpret_cast<const uint8_t*>(p));
     }
   };
 
@@ -90,6 +101,22 @@ namespace ecpp
     {
       MemoryHelper<sizeof(T)> b;
       b.readEEPROM(&_Value);
+      return *reinterpret_cast<T*>(&b);
+    }
+  };
+
+  template<typename T>
+  class FlashVariable
+  {
+  private:
+    T   m_Value;
+  public:
+    constexpr FlashVariable(const T& init) : m_Value(init) {};
+
+    operator T() const
+    {
+      MemoryHelper<sizeof(T)> b;
+      b.readFlash(&m_Value);
       return *reinterpret_cast<T*>(&b);
     }
   };
