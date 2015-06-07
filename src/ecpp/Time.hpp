@@ -9,6 +9,7 @@
 #define ECPP_TIME_HPP_
 
 #include "ecpp/Datatypes.hpp"
+#include "ecpp/Operators.hpp"
 
 namespace ecpp
 {
@@ -56,7 +57,11 @@ namespace ecpp
   public:
     void start (C timeout)    {Counter = timeout;}
     void stop  ()             {Counter = 0;}
-    bool hasTimedOut() const  {return 0 == Counter;}
+
+    C getElapsedTime(C timeout) const { return timeout - Counter;}
+    C getRemainingTime()           const { return Counter;}
+
+    bool hasTimedOut() const {return 0 == Counter;}
 
     template<typename T>
     void update (T TimePassed)
@@ -223,6 +228,60 @@ namespace ecpp
       }
     };
   };
+
+  class WeekTime
+  {
+  private:
+    uint8_t m_Second;
+    uint8_t m_Minute;
+    uint8_t m_Hour;
+    uint8_t m_WeekDay;
+  public:
+    WeekTime() : m_Second(0), m_Minute(0), m_Hour(0), m_WeekDay(0) {};
+
+    template<typename T>
+    void setMonotonic(T seconds);
+
+    uint8_t getSecond()  const {return m_Second;}
+    uint8_t getMinute()  const {return m_Minute;}
+    uint8_t getHour()    const {return m_Hour;}
+    uint8_t getWeekDay() const {return m_WeekDay;}
+
+    void setSecond(uint8_t Second)   {m_Second  = Second;};
+    void setMinute(uint8_t Minute)   {m_Minute  = Minute;};
+    void setHour  (uint8_t Hour)     {m_Hour    = Hour;};
+    void setWeekDay(uint8_t WeekDay) {m_WeekDay = WeekDay;};
+
+    void incSecond(uint8_t inc);
+    void decSecond(uint8_t dec);
+
+    void incMinute(uint8_t inc);
+    void decMinute(uint8_t dec);
+
+    void incHour(uint8_t inc);
+    void decHour(uint8_t dec);
+
+    void decWeekday(uint8_t dec) { subWrapped(m_WeekDay, dec, (uint8_t)7);}
+
+
+    uint32_t                  getMonotonic() const;
+    static constexpr uint32_t getWrapAround() {return 7UL * 24UL * 60UL * 60UL;}
+
+    uint32_t operator - (const WeekTime & rhs) const;
+  };
+
+  template<typename T>
+  void WeekTime::setMonotonic(T seconds)
+  {
+    m_Second = m_Minute = m_Hour = m_WeekDay = 0;
+    while(seconds >= 255)
+    {
+      incSecond(255);
+      seconds -= 255;
+    }
+
+    incSecond(seconds);
+  }
 };
 
 

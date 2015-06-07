@@ -18,12 +18,16 @@ namespace ecpp
   template<int SIZE>
   struct MemoryHelper
   {
-  private:
     uint8_t bytes[SIZE];
   public:
     void readEEPROM(const void* p)
     {
       eeprom_read_block(this, p, SIZE);
+    }
+
+    void writeEEPROM(void* p) const
+    {
+      eeprom_update_block(this, p, SIZE);
     }
 
     void readFlash(const void* p)
@@ -72,6 +76,11 @@ namespace ecpp
       bytes[1] = eeprom_read_byte(reinterpret_cast<const uint8_t*>(p) + 1);
 #endif
     }
+
+    void readFlash(const void *p)
+    {
+      value = pgm_read_word(reinterpret_cast<const uint16_t*>(p));
+    }
   };
 
   template<>
@@ -95,13 +104,27 @@ namespace ecpp
   private:
     T   _Value;
   public:
+    constexpr EEVariable() {};
     constexpr EEVariable(const T& init) : _Value(init) {};
+
+    void read(T &buffer) const
+    {
+      MemoryHelper<sizeof(T)> *b = reinterpret_cast<MemoryHelper<sizeof(T)>*>(&buffer);
+      b->readEEPROM(&_Value);
+    }
 
     operator T() const
     {
       MemoryHelper<sizeof(T)> b;
       b.readEEPROM(&_Value);
       return *reinterpret_cast<T*>(&b);
+    }
+
+    const T & operator = (const T & rhs)
+    {
+      const MemoryHelper<sizeof(T)> *b = reinterpret_cast<const MemoryHelper<sizeof(T)>*>(&rhs);
+      b->writeEEPROM(&_Value);
+      return rhs;
     }
   };
 
