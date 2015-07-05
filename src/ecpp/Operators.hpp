@@ -47,6 +47,32 @@ namespace ecpp
     lhs = accu - rhs;
     return overflows;
   }
+
+  template<typename T>
+  T incWrapped(T lhs, T max)
+  {
+    if(lhs < max)
+    {
+      return lhs + 1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  template<typename T>
+  T decWrapped(T lhs, T max)
+  {
+    if(lhs > 0)
+    {
+      return lhs - 1;
+    }
+    else
+    {
+      return max;
+    }
+  }
 }
 
 

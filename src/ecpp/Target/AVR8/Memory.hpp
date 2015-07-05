@@ -11,6 +11,8 @@
 
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+
+#include "ecpp/VaTemplate.hpp"
 #include <stdint.h>
 
 namespace ecpp
@@ -128,8 +130,26 @@ namespace ecpp
     }
   };
 
-  template<typename T>
+  template<typename T, int ELEMENTS = 1>
   class FlashVariable
+  {
+  private:
+    T m_Value[ELEMENTS];
+
+  public:
+    template<typename ...I>
+    constexpr FlashVariable(const I&... init) : m_Value{ static_cast<T>(init)...} {};
+
+    T operator [] (const int index) const
+    {
+      MemoryHelper<sizeof(T)> b;
+      b.readFlash(&m_Value[index]);
+      return *reinterpret_cast<T*>(&b);
+    }
+  };
+
+  template<typename T>
+  class FlashVariable<T,1>
   {
   private:
     T   m_Value;

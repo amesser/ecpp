@@ -55,11 +55,13 @@ namespace ecpp
   private:
     C Counter;
   public:
+    constexpr SimpleTimer() {}
+    constexpr SimpleTimer(const C init) : Counter(init) {}
     void start (C timeout)    {Counter = timeout;}
     void stop  ()             {Counter = 0;}
 
     C getElapsedTime(C timeout) const { return timeout - Counter;}
-    C getRemainingTime()           const { return Counter;}
+    C getRemainingTime()        const { return Counter;}
 
     bool hasTimedOut() const {return 0 == Counter;}
 

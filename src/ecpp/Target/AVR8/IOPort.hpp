@@ -52,10 +52,68 @@ namespace ecpp
   template<int PORT>
   class IOPort;
 
+  class IOMask
+  {
+  private:
+    uint8_t m_Mask;
+  public:
+    constexpr IOMask(const uint8_t init) : m_Mask(init) {}
+  };
+
+  template<int PIN>
+  class IOPinMask
+  {
+  public:
+    static constexpr uint8_t MASK = 0x01 << (PIN & 0xF);
+  };
+
+  template<int PIN>
+  class IOPinStateOutputHigh : public IOPinMask<PIN> {};
+
+  template<int PIN>
+  class IOPinStateOutputLow : public IOPinMask<PIN>   {};
+
+
+  class IOPortState
+  {
+  private:
+    const uint8_t m_DDR;
+    const uint8_t m_PORT;
+  public:
+    constexpr uint8_t getDDR()  const {return m_DDR;}
+    constexpr uint8_t getPORT() const {return m_PORT;}
+
+    template<int PIN>
+    constexpr IOPortState(const IOPinStateOutputHigh<PIN> &outhigh) : m_DDR(outhigh.MASK), m_PORT(outhigh.MASK) {};
+
+    template<int PIN>
+    constexpr IOPortState(const IOPinStateOutputLow<PIN> &outlow)   : m_DDR(outlow.MASK), m_PORT(0) {};
+
+    constexpr IOPortState(uint8_t DDR, uint8_t PORT) : m_DDR(DDR), m_PORT(PORT) {};
+
+
+    constexpr IOPortState operator | (const IOPortState &rhs) const __attribute__((always_inline))
+    {
+      return IOPortState(m_DDR | rhs.m_DDR, m_PORT | rhs.m_PORT);
+    }
+  };
+
+  template<int LHSPIN, int RHSPIN>
+  constexpr IOPortState operator | (const IOPinStateOutputLow<LHSPIN> &lhs, const IOPinStateOutputLow<RHSPIN> &rhs) __attribute__((always_inline));
+
+  template<int LHSPIN, int RHSPIN>
+  constexpr IOPortState operator | (const IOPinStateOutputLow<LHSPIN> &lhs, const IOPinStateOutputLow<RHSPIN> &rhs)
+  {
+    return IOPortState(lhs) | IOPortState(rhs);
+  }
+
   template<int PIN>
   class IOPin : public IOPortRegisters<PIN & 0xF0>
   {
   public:
+    static constexpr IOPinStateOutputHigh<PIN> OutHigh = {};
+    static constexpr IOPinStateOutputLow<PIN>  OutLow  = {};
+
     static constexpr uint8_t MASK = 0x01 << (PIN & 0xF);
 
     static void enableOutput()  __attribute__((always_inline))
@@ -87,7 +145,14 @@ namespace ecpp
     {
       return 0 != (*(IOPin::PIN) & MASK);
     }
+
+    template<int RHSPIN>
+    IOMask operator | (const IOPin<RHSPIN> & rhs) const
+    {
+      return MASK | rhs.MASK;
+    }
   };
+
 
   template<int PORT>
   class IOPortRegisters {};
@@ -146,6 +211,13 @@ namespace ecpp
     void operator = (uint8_t out)
     {
       *(this->PORT) = out;
+    }
+
+    static void setState (const IOPortState state)
+    {
+      *(IOPortRegisters<PORT>::DDR)  &= state.getDDR();
+      *(IOPortRegisters<PORT>::PORT) =  state.getPORT();
+      *(IOPortRegisters<PORT>::DDR)  =  state.getDDR();
     }
 
     operator uint8_t () const
