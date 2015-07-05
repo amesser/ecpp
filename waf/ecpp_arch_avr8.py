@@ -64,11 +64,11 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
     conf.setenv(envname, conf.env)
 
     if create:
-      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+      for x in 'ASFLAGS CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mmcu=%s' % device.lower()])
 
       for x in 'CFLAGS CXXFLAGS'.split():
-        conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums'])
+        conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums', '-fomit-frame-pointer'])
 
       conf.env.append_value('LINKFLAGS', ['--static', '-Wl,--gc-sections'])
       
