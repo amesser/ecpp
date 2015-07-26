@@ -61,9 +61,10 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
     conf.ecpp_setuptoolchain('avr8')
 
     create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-
+    
     if create:
+      conf.setenv(envname, conf.env)
+      
       for x in 'ASFLAGS CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mmcu=%s' % device.lower()])
 
@@ -85,3 +86,5 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
 
       conf.env.append_value('ECPP_FEATURES',['avr-firmware'])
       conf.env.append_value('ECPP_USE',     [ecpp_libname])
+    else:
+        conf.setenv(envname)
