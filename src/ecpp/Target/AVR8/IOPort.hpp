@@ -146,6 +146,14 @@ namespace ecpp
       return 0 != (*(IOPin::PIN) & MASK);
     }
 
+    void operator = (bool state) __attribute__((always_inline))
+    {
+      if(state)
+        setOutput();
+      else
+        clearOutput();
+    }
+
     template<int RHSPIN>
     IOMask operator | (const IOPin<RHSPIN> & rhs) const
     {
