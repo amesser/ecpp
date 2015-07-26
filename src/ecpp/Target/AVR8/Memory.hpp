@@ -100,14 +100,32 @@ namespace ecpp
     }
   };
 
-  template<typename T>
+
+  template<typename T, int ELEMENTS = 1>
   class EEVariable
+  {
+  private:
+    T   m_Value[ELEMENTS];
+  public:
+    template<typename ...I>
+    constexpr EEVariable(const I&... init) : m_Value{ static_cast<T>(init)...} {};
+
+    T operator [] (const int index) const
+    {
+      MemoryHelper<sizeof(T)> b;
+      b.readEEPROM(&m_Value[index]);
+      return *reinterpret_cast<T*>(&b);
+    }
+  };
+
+  template<typename T>
+  class EEVariable<T,1>
   {
   private:
     T   _Value;
   public:
     constexpr EEVariable() {};
-    constexpr EEVariable(const T& init) : _Value(init) {};
+    constexpr EEVariable(const T init) : _Value(init) {};
 
     void read(T &buffer) const
     {
@@ -130,6 +148,26 @@ namespace ecpp
     }
   };
 
+
+  template<typename T>
+  class ConstFlashIterator
+  {
+  private:
+    T const * m_Ptr;
+  public:
+    constexpr ConstFlashIterator(const T *Ptr) : m_Ptr(Ptr) {}
+    constexpr bool operator < (ConstFlashIterator & rhs) const { return m_Ptr < rhs.m_Ptr;}
+
+    ConstFlashIterator operator ++ (int) {return {m_Ptr++};}
+
+    T operator * () const {
+      MemoryHelper<sizeof(T)> b;
+      b.readFlash(m_Ptr);
+      return *reinterpret_cast<T*>(&b);
+    }
+  };
+
+
   template<typename T, int ELEMENTS = 1>
   class FlashVariable
   {
@@ -145,6 +183,18 @@ namespace ecpp
       MemoryHelper<sizeof(T)> b;
       b.readFlash(&m_Value[index]);
       return *reinterpret_cast<T*>(&b);
+    }
+
+    ConstFlashIterator<T>
+    begin() const
+    {
+      return &m_Value[0];
+    }
+
+    ConstFlashIterator<T>
+    end() const
+    {
+      return &m_Value[ELEMENTS];
     }
   };
 
