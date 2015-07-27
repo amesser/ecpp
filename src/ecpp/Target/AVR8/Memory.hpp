@@ -176,7 +176,13 @@ namespace ecpp
 
   public:
     template<typename ...I>
-    constexpr FlashVariable(const I&... init) : m_Value{ static_cast<T>(init)...} {};
+    constexpr FlashVariable(const T& a, const T& b, const I&... rem) : m_Value{a, b, static_cast<T>(rem)...} {};
+
+    template<::ecpp::indices_type ...Is>
+    constexpr FlashVariable(const T (&init)[ELEMENTS], ::ecpp::indices<Is...>) : m_Value{init[Is]...} {};
+
+    constexpr FlashVariable(const T (&init)[ELEMENTS]) : FlashVariable(init, ::ecpp::build_indices<ELEMENTS>()) {};
+
 
     T operator [] (const int index) const
     {
@@ -212,6 +218,19 @@ namespace ecpp
       b.readFlash(&m_Value);
       return *reinterpret_cast<T*>(&b);
     }
+
+    ConstFlashIterator<T>
+    begin() const
+    {
+      return &m_Value;
+    }
+
+    ConstFlashIterator<T>
+    end() const
+    {
+      return &m_Value + 1;
+    }
+
   };
 
 }
