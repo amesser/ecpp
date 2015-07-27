@@ -71,7 +71,7 @@ namespace ecpp
   class IOPinStateOutputHigh : public IOPinMask<PIN> {};
 
   template<int PIN>
-  class IOPinStateOutputLow : public IOPinMask<PIN>   {};
+  class IOPinStateOutputLow : public IOPinMask<PIN> {};
 
 
   class IOPortState
@@ -98,11 +98,11 @@ namespace ecpp
     }
   };
 
-  template<int LHSPIN, int RHSPIN>
-  constexpr IOPortState operator | (const IOPinStateOutputLow<LHSPIN> &lhs, const IOPinStateOutputLow<RHSPIN> &rhs) __attribute__((always_inline));
+  template<template<int> class LHS, template<int> class RHS, int LHSPIN, int RHSPIN>
+  constexpr IOPortState operator | (const LHS<LHSPIN> lhs, const RHS<RHSPIN> rhs) __attribute__((always_inline));
 
-  template<int LHSPIN, int RHSPIN>
-  constexpr IOPortState operator | (const IOPinStateOutputLow<LHSPIN> &lhs, const IOPinStateOutputLow<RHSPIN> &rhs)
+  template<template<int> class LHS, template<int> class RHS, int LHSPIN, int RHSPIN>
+  constexpr IOPortState operator | (const LHS<LHSPIN> lhs, const RHS<RHSPIN> rhs)
   {
     return IOPortState(lhs) | IOPortState(rhs);
   }
@@ -221,6 +221,13 @@ namespace ecpp
       *(this->PORT) = out;
     }
 
+    void operator = (const IOPortState state)
+    {
+      *(IOPortRegisters<PORT>::DDR)  &= state.getDDR();
+      *(IOPortRegisters<PORT>::PORT) =  state.getPORT();
+      *(IOPortRegisters<PORT>::DDR)  =  state.getDDR();
+    }
+
     static void setState (const IOPortState state)
     {
       *(IOPortRegisters<PORT>::DDR)  &= state.getDDR();
@@ -236,6 +243,12 @@ namespace ecpp
     void setDirection(uint8_t direction)
     {
       *(this->DDR) = direction;
+    }
+
+    void updateDirection(uint8_t direction, uint8_t mask)
+    {
+
+      *(this->DDR) = (*(this->DDR) & ~(mask)) | direction;
     }
   };
 }
