@@ -184,7 +184,7 @@ namespace ecpp {
       {
         MODE<BSP>::delay(20000);
         MODE<BSP>::initBus();
-        this->writeBytes(MODE<BSP>::HD44780InitSequence.begin(), MODE<BSP>::HD44780InitSequence.end());
+        this->writeBytes(MODE<BSP>::InitSequence.begin(), MODE<BSP>::InitSequence.end());
         MODE<BSP>::delay(5000);
       }
     };
