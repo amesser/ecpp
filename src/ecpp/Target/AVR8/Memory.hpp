@@ -13,7 +13,7 @@
 #include <avr/pgmspace.h>
 
 #include "ecpp/VaTemplate.hpp"
-#include <stdint.h>
+#include "ecpp/Datatypes.hpp"
 
 namespace ecpp
 {
@@ -178,10 +178,11 @@ namespace ecpp
     template<typename ...I>
     constexpr FlashVariable(const T& a, const T& b, const I&... rem) : m_Value{a, b, static_cast<T>(rem)...} {};
 
-    template<::ecpp::indices_type ...Is>
-    constexpr FlashVariable(const T (&init)[ELEMENTS], ::ecpp::indices<Is...>) : m_Value{init[Is]...} {};
+    template<typename INIT, int INITELEMENTS, ::ecpp::indices_type ...Is>
+    constexpr FlashVariable(const INIT (&init)[INITELEMENTS], ::ecpp::indices<Is...>) : m_Value{init[Is]...} {};
 
-    constexpr FlashVariable(const T (&init)[ELEMENTS]) : FlashVariable(init, ::ecpp::build_indices<ELEMENTS>()) {};
+    template<typename INIT, int INITELEMENTS>
+    constexpr FlashVariable(const INIT (&init)[INITELEMENTS]) : FlashVariable(init, ::ecpp::build_indices<min(INITELEMENTS, ELEMENTS)>()) {};
 
 
     T operator [] (const int index) const
@@ -189,6 +190,13 @@ namespace ecpp
       MemoryHelper<sizeof(T)> b;
       b.readFlash(&m_Value[index]);
       return *reinterpret_cast<T*>(&b);
+    }
+
+    template<typename B>
+    void read(B &buffer) const
+    {
+      MemoryHelper<min(sizeof(FlashVariable), sizeof(B))> *b = reinterpret_cast<MemoryHelper<min(sizeof(FlashVariable), sizeof(B))>*>(&buffer);
+      b->readFlash(&m_Value);
     }
 
     ConstFlashIterator<T>
