@@ -74,77 +74,102 @@ namespace ecpp {
     protected:
       void delay50us() {BSP::delay(50);}
 
-      uint8_t readNibble()
-      {
-        uint8_t data;
-
-        BSP::setEnable();
-        delay50us();
-        data = BSP::getNibble() & 0x0F;
-        BSP::clearEnable();
-
-        return data;
-      }
-
-      void writeNibble(uint8_t data)
-      {
-        BSP::setNibble(data);
-        BSP::clearEnable();
-        delay50us();
-        BSP::setEnable();
-      }
-
-      uint8_t readByte()
-      {
-        uint8_t data;
-
-        BSP::setRW();
-
-        data  = readNibble() << 4;
-        data |= readNibble();
-
-        return data;
-      }
-
-      void writeByte(uint8_t data)
-      {
-        BSP::clearRW();
-        writeNibble(data >> 4);
-        writeNibble(data & 0x0F);
-      }
-
-      void initBus()
-      {
-        BSP::clearRW();
-        BSP::clearRS();
-
-        writeNibble(0x03);
-        BSP::delay(5000);
-        writeNibble(0x03);
-        BSP::delay(5000);
-        writeNibble(0x03);
-        writeNibble(0x02);
-
-      }
-    public:
+      uint8_t readNibble();
+      void writeNibble(uint8_t data);
+      uint8_t readByte();
+      void writeByte(uint8_t data);
+      void initBus();
     };
 
-    template<template<class> class MODE, class BSP>
+    template<class BSP>
+    uint8_t HD44780_MODE_4BIT<BSP>::readNibble()
+    {
+      uint8_t data;
+
+      BSP::setEnable();
+      delay50us();
+      data = BSP::getNibble() & 0x0F;
+      BSP::clearEnable();
+      delay50us();
+      return data;
+    }
+
+    template<class BSP>
+    void HD44780_MODE_4BIT<BSP>::writeNibble(uint8_t data)
+    {
+      BSP::setNibble(data);
+      BSP::clearEnable();
+      delay50us();
+      BSP::setEnable();
+      delay50us();
+    }
+
+    template<class BSP>
+    uint8_t HD44780_MODE_4BIT<BSP>::readByte()
+    {
+      uint8_t data;
+
+      BSP::setRW();
+
+      data  = readNibble() << 4;
+      data |= readNibble();
+
+      return data;
+    }
+
+    template<class BSP>
+    void HD44780_MODE_4BIT<BSP>::writeByte(uint8_t data)
+    {
+      BSP::clearRW();
+
+      writeNibble((data >> 4) & 0x0F);
+      writeNibble(data & 0x0F);
+    }
+
+    template<class BSP>
+    void HD44780_MODE_4BIT<BSP>::initBus()
+    {
+      BSP::clearRW();
+      BSP::clearRS();
+
+      writeNibble(0x03);
+      BSP::delay(5000);
+      writeNibble(0x03);
+      BSP::delay(5000);
+      writeNibble(0x03);
+      writeNibble(0x02);
+    }
+
+
+
+    template<template<class> class MODE, class BSP, int ROWS = 2, int COLUMNS = 16>
     class LCD_HD44780 : public MODE<BSP>
     {
+    public:
+      typedef char RowBufferType[COLUMNS];
     private:
+      RowBufferType m_RowBuffer;
+
       void prepareData()    {BSP::setRS();}
       void prepareCommand() {BSP::clearRS();}
 
       template<typename IT>
-      void writeBytes(IT begin, IT end)
-      {
-        while(begin < end)
-        {
-          MODE<BSP>::writeByte(*(begin++));
-        }
-      }
+      void writeBytes(IT begin, IT end);
+
     public:
+      RowBufferType & getBuffer() {return m_RowBuffer;}
+
+      void writeBuffer(uint_fast8_t length)
+      {
+        writeBytes(&m_RowBuffer[0], &m_RowBuffer[length]);
+      }
+
+      void writeTextBuffer(uint_fast8_t length)
+      {
+        prepareData();
+        writeBuffer(length);
+      }
+
       void writeData(uint8_t data)
       {
         prepareData();
@@ -184,11 +209,21 @@ namespace ecpp {
       {
         MODE<BSP>::delay(20000);
         MODE<BSP>::initBus();
-        this->writeBytes(MODE<BSP>::InitSequence.begin(), MODE<BSP>::InitSequence.end());
+        MODE<BSP>::InitSequence.read(m_RowBuffer);
+        writeBuffer(sizeof(MODE<BSP>::InitSequence));
         MODE<BSP>::delay(5000);
       }
     };
 
+    template<template<class> class MODE, class BSP, int ROWS, int COLUMNS>
+    template<typename IT>
+    void LCD_HD44780<MODE,BSP,ROWS,COLUMNS>::writeBytes(IT begin, IT end)
+    {
+      while(begin < end)
+      {
+        MODE<BSP>::writeByte(*(begin++));
+      }
+    }
 
 
   };
