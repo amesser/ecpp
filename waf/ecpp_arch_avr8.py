@@ -79,12 +79,9 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
       conf.env['DEVICE'] = device
 
       # Mark this env to build a ecpp library for
-      ecpp_libname = 'ecpp_%s' % conf.env['DEVICE'].lower()
+      # each target independently
       
-      conf.env['ECPP_BUILDLIB'] = True
-      conf.env.append_value('ECPP_LIBNAME', ecpp_libname) 
-
+      conf.env['ECPP_BUILDLIB_TARGET'] = True
       conf.env.append_value('ECPP_FEATURES',['avr-firmware'])
-      conf.env.append_value('ECPP_USE',     [ecpp_libname])
     else:
         conf.setenv(envname)

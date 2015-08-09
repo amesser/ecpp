@@ -53,7 +53,7 @@ def build(bld):
           
           bld.ecpp_build( 
               id       = id,
-              target   = 'ecpp_%s' % env['DEVICE'].lower(),
+              target   = env.get_flat('ECPP_LIBNAME'),
               source   = source,
               includes = ['.'],
               export_includes = [bld.path],
