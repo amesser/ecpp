@@ -57,6 +57,9 @@ namespace ecpp {
   };
 
   template<>
+  class TypeProperties<int8_t> : public TypeProperties<uint8_t> {};
+
+  template<>
   class TypeProperties<uint16_t>
   {
     public:
