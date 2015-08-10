@@ -8,6 +8,8 @@
 #ifndef ECPP_STRING_HPP_
 #define ECPP_STRING_HPP_
 
+#include <ecpp/Datatypes.hpp>
+
 namespace ecpp
 {
   class String
