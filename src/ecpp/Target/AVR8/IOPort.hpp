@@ -68,10 +68,16 @@ namespace ecpp
   };
 
   template<int PIN>
-  class IOPinStateOutputHigh : public IOPinMask<PIN> {};
+  class IOPinStateOutputHigh  : public IOPinMask<PIN> {};
 
   template<int PIN>
-  class IOPinStateOutputLow : public IOPinMask<PIN> {};
+  class IOPinStateOutputLow   : public IOPinMask<PIN> {};
+
+  template<int PIN>
+  class IOPinStateInputPullUp : public IOPinMask<PIN> {};
+
+  template<int PIN>
+  class IOPinStateInput       : public IOPinMask<PIN> {};
 
 
   class IOPortState
@@ -88,6 +94,12 @@ namespace ecpp
 
     template<int PIN>
     constexpr IOPortState(const IOPinStateOutputLow<PIN> &outlow)   : m_DDR(outlow.MASK), m_PORT(0) {};
+
+    template<int PIN>
+    constexpr IOPortState(const IOPinStateInputPullUp<PIN> &inpullup)   : m_DDR(0), m_PORT(inpullup.MASK) {};
+
+    template<int PIN>
+    constexpr IOPortState(const IOPinStateInput<PIN> &in)   : m_DDR(0), m_PORT(0) {};
 
     constexpr IOPortState(uint8_t DDR, uint8_t PORT) : m_DDR(DDR), m_PORT(PORT) {};
 
@@ -111,8 +123,10 @@ namespace ecpp
   class IOPin : public IOPortRegisters<PIN & 0xF0>
   {
   public:
-    static constexpr IOPinStateOutputHigh<PIN> OutHigh = {};
-    static constexpr IOPinStateOutputLow<PIN>  OutLow  = {};
+    static constexpr IOPinStateOutputHigh<PIN>  OutHigh  = {};
+    static constexpr IOPinStateOutputLow<PIN>   OutLow   = {};
+    static constexpr IOPinStateInputPullUp<PIN> InPullUp = {};
+    static constexpr IOPinStateInput<PIN>       In       = {};
 
     static constexpr uint8_t MASK = 0x01 << (PIN & 0xF);
 
@@ -154,8 +168,13 @@ namespace ecpp
         clearOutput();
     }
 
+    constexpr operator bool() __attribute__((always_inline))
+    {
+      return getInput();
+    }
+
     template<int RHSPIN>
-    IOMask operator | (const IOPin<RHSPIN> & rhs) const
+    constexpr IOMask operator | (const IOPin<RHSPIN> & rhs) const
     {
       return MASK | rhs.MASK;
     }
