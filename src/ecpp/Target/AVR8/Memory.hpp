@@ -193,7 +193,6 @@ namespace ecpp
 
     constexpr FlashVariable(const T *init) : FlashVariable(init, ::ecpp::build_indices<ELEMENTS>()) {};
 
-
     T operator [] (int index) const
     {
       MemoryHelper<sizeof(T)> b;
@@ -233,9 +232,30 @@ namespace ecpp
 
     operator T() const
     {
-      MemoryHelper<sizeof(T)> b;
+      union {
+        T value;
+        MemoryHelper<sizeof(T)> b;
+      };
+
       b.readFlash(&m_Value);
-      return *reinterpret_cast<T*>(&b);
+      return value;
+    }
+
+    template<typename B>
+    void read(B &buffer) const
+    {
+      MemoryHelper<min(sizeof(FlashVariable), sizeof(B))> *b = reinterpret_cast<MemoryHelper<min(sizeof(FlashVariable), sizeof(B))>*>(&buffer);
+      b->readFlash(&m_Value);
+    }
+
+    bool operator == (const T & rhs) const
+    {
+      return 0 == memcmp_P(&rhs, this, sizeof(*this));
+    }
+
+    bool operator != (const T & rhs) const
+    {
+      return 0 != memcmp_P(&rhs, this, sizeof(*this));
     }
 
     ConstFlashIterator<T>
@@ -251,6 +271,7 @@ namespace ecpp
     }
 
   };
+
 
 }
 
