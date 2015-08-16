@@ -98,10 +98,14 @@ namespace ecpp
     {
       value = eeprom_read_dword(reinterpret_cast<const uint32_t*>(p));
     }
+
+    void readFlash(const void *p)
+    {
+      value = pgm_read_dword(reinterpret_cast<const uint32_t*>(p));
+    }
   };
 
-
-  template<typename T, int ELEMENTS = 1>
+  template<typename T, int ELEMENTS>
   class EEVariable
   {
   private:
@@ -168,7 +172,7 @@ namespace ecpp
   };
 
 
-  template<typename T, int ELEMENTS = 1>
+  template<typename T, int ELEMENTS>
   class FlashVariable
   {
   private:
@@ -184,11 +188,16 @@ namespace ecpp
     template<typename INIT, int INITELEMENTS>
     constexpr FlashVariable(const INIT (&init)[INITELEMENTS]) : FlashVariable(init, ::ecpp::build_indices<min(INITELEMENTS, ELEMENTS)>()) {};
 
+    template<::ecpp::indices_type ...Is>
+    constexpr FlashVariable(const T *init, ::ecpp::indices<Is...>) : m_Value{init[Is]...} {};
 
-    T operator [] (const int index) const
+    constexpr FlashVariable(const T *init) : FlashVariable(init, ::ecpp::build_indices<ELEMENTS>()) {};
+
+
+    T operator [] (int index) const
     {
       MemoryHelper<sizeof(T)> b;
-      b.readFlash(&m_Value[index]);
+      b.readFlash(&(m_Value[index]));
       return *reinterpret_cast<T*>(&b);
     }
 
@@ -218,6 +227,8 @@ namespace ecpp
   private:
     T   m_Value;
   public:
+    constexpr FlashVariable() : m_Value(0) {};
+
     constexpr FlashVariable(const T& init) : m_Value(init) {};
 
     operator T() const

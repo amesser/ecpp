@@ -135,6 +135,10 @@ namespace ecpp {
   constexpr typename UnsignedIntTypeEstimator<COUNT>::Type ElementCount(const TYPE (& type)[COUNT]) {
     return UnsignedIntTypeEstimator<COUNT>::Value;
   };
+
+  template<typename T, int ELEMENTS = 1> class EEVariable;
+  template<typename T, int ELEMENTS = 1> class FlashVariable;
+
 };
 
 
