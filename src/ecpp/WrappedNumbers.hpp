@@ -33,11 +33,18 @@ namespace ecpp {
       return value;
     }
   public:
+    constexpr WrappedInteger() {};
     constexpr WrappedInteger(const T init) : m_value(init) {};
 
     WrappedInteger operator - (WrappedInteger rhs)
     {
       return wrapNumber(m_value - rhs.m_value + MAX + 1);
+    }
+
+    WrappedInteger & operator += (WrappedInteger rhs)
+    {
+      m_value = wrapNumber(m_value + rhs.m_value);
+      return *this;
     }
 
     WrappedInteger & operator ++ ()
