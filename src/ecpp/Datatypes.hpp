@@ -35,15 +35,6 @@
 #include <stdint.h>
 
 namespace ecpp {
-  template<typename TYPE>
-  constexpr TYPE max(const TYPE & a, const TYPE & b) {
-    return (a > b) ? a : b;
-  };
-
-  template<typename TYPE>
-  constexpr TYPE min(const TYPE & a, const TYPE & b) {
-    return (a < b) ? a : b;
-  };
 
   template<typename T>
   class TypeProperties {};
@@ -75,22 +66,87 @@ namespace ecpp {
       static constexpr uint32_t MaxUnsigned = 0xFFFFFFFF;
   };
 
+  template<unsigned int BYTES>
+  class UnsignedIntType
+  {
+  public:
+    typedef typename UnsignedIntType<BYTES + 1>::Type      Type;
+    typedef typename UnsignedIntType<BYTES + 1>::FastType  FastType;
+    typedef typename UnsignedIntType<BYTES + 1>::LeastType LeastType;
+  };
+
+  template<> class UnsignedIntType<1>
+  {
+  public:
+    typedef uint8_t       Type;
+    typedef uint_fast8_t  FastType;
+    typedef uint_least8_t LeastType;
+  };
+
+  template<> class UnsignedIntType<2>
+  {
+  public:
+    typedef uint16_t       Type;
+    typedef uint_fast16_t  FastType;
+    typedef uint_least16_t LeastType;
+  };
+
+  template<> class UnsignedIntType<4>
+  {
+  public:
+    typedef uint32_t       Type;
+    typedef uint_fast32_t  FastType;
+    typedef uint_least32_t LeastType;
+  };
+
+  template<> class UnsignedIntType<8>
+  {
+  public:
+    typedef uint64_t       Type;
+    typedef uint_fast64_t  FastType;
+    typedef uint_least64_t LeastType;
+  };
 
   template<unsigned int BYTES>
-  class UnsignedIntType { public: typedef UnsignedIntType<BYTES + 1> Type; };
+  class IntType
+  {
+  public:
+    typedef typename IntType<BYTES + 1>::Type      Type;
+    typedef typename IntType<BYTES + 1>::FastType  FastType;
+    typedef typename IntType<BYTES + 1>::LeastType LeastType;
+  };
 
-  template<> class UnsignedIntType<1> { public: typedef uint8_t  Type; };
-  template<> class UnsignedIntType<2> { public: typedef uint16_t Type; };
-  template<> class UnsignedIntType<4> { public: typedef uint32_t Type; };
-  template<> class UnsignedIntType<8> { public: typedef uint64_t Type; };
+  template<> class IntType<1>
+  {
+  public:
+    typedef int8_t       Type;
+    typedef int_fast8_t  FastType;
+    typedef int_least8_t LeastType;
+  };
 
-  template<unsigned int BYTES>
-  class IntType { public: typedef IntType<BYTES + 1> Type; };
+  template<> class IntType<2>
+  {
+  public:
+    typedef int16_t       Type;
+    typedef int_fast16_t  FastType;
+    typedef int_least16_t LeastType;
+  };
 
-  template<> class IntType<1> { public: typedef int8_t  Type; };
-  template<> class IntType<2> { public: typedef int16_t Type; };
-  template<> class IntType<4> { public: typedef int32_t Type; };
-  template<> class IntType<8> { public: typedef int64_t Type; };
+  template<> class IntType<4>
+  {
+  public:
+    typedef int32_t       Type;
+    typedef int_fast32_t  FastType;
+    typedef int_least32_t LeastType;
+  };
+
+  template<> class IntType<8>
+  {
+  public:
+    typedef int64_t       Type;
+    typedef int_fast64_t  FastType;
+    typedef int_least64_t LeastType;
+  };
 
   template<typename TYPE>  class DoubleWidthType {};
 
@@ -139,6 +195,58 @@ namespace ecpp {
   template<typename T, int ELEMENTS = 1> class EEVariable;
   template<typename T, int ELEMENTS = 1> class FlashVariable;
 
+  template<typename TYPE>
+  constexpr TYPE max(const TYPE & a, const TYPE & b) {
+    return (a > b) ? a : b;
+  };
+
+  template<typename T, int N>
+  T max(const T (& Values)[N])
+  {
+    auto Idx = UnsignedIntTypeEstimator<N>::Value - 1;
+    auto Max = Values[Idx];
+
+    while(Idx > 0)
+    {
+      Max = max(Values[--Idx], Max);
+    }
+
+    return Max;
+  };
+
+  template<typename TYPE>
+  constexpr TYPE min(const TYPE & a, const TYPE & b) {
+    return (a < b) ? a : b;
+  };
+
+  template<typename T, int N>
+  T min(const T (& Values)[N])
+  {
+    auto Idx = UnsignedIntTypeEstimator<N>::Value - 1;
+    auto Min = Values[Idx];
+
+    while(Idx > 0)
+    {
+      Min = min(Values[--Idx], Min);
+    }
+
+    return Min;
+  };
+
+  template<typename T, int N>
+  T
+  sum(const T (& Values)[N])
+  {
+    auto Idx = UnsignedIntTypeEstimator<N>::Value;
+    T Sum = 0;
+
+    while(Idx > 0)
+    {
+        Sum += Values[--Idx];
+    }
+
+    return Sum;
+  }
 };
 
 
