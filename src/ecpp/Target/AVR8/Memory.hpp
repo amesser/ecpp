@@ -230,7 +230,7 @@ namespace ecpp
 
     constexpr FlashVariable(const T& init) : m_Value(init) {};
 
-    operator T() const
+    inline operator T() const __attribute__((always_inline))
     {
       union {
         T value;
