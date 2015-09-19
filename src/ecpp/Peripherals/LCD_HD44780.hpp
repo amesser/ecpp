@@ -140,8 +140,6 @@ namespace ecpp {
       writeNibble(0x02);
     }
 
-
-
     template<template<class> class MODE, class BSP, int ROWS = 2, int COLUMNS = 16>
     class LCD_HD44780 : public MODE<BSP>
     {
@@ -157,6 +155,8 @@ namespace ecpp {
       void writeBytes(IT begin, IT end);
 
     public:
+      constexpr HD44780_CMD Location(uint_fast8_t Column, uint_fast8_t Row) { return 0x80 | (Column + Row * 0x40);}
+
       RowBufferType & getBuffer() {return m_RowBuffer;}
 
       void writeBuffer(uint_fast8_t length)
@@ -213,6 +213,12 @@ namespace ecpp {
         writeBuffer(sizeof(MODE<BSP>::InitSequence));
         MODE<BSP>::delay(5000);
       }
+
+      void clearDisplay() {writeCommand(HD44780_CMD_CLEAR);}
+
+      template<typename IT>
+      void displayString(const HD44780_CMD loc, IT begin, IT end);
+
     };
 
     template<template<class> class MODE, class BSP, int ROWS, int COLUMNS>
@@ -225,8 +231,20 @@ namespace ecpp {
       }
     }
 
+    template<template<class> class MODE, class BSP, int ROWS, int COLUMNS>
+    template<typename IT>
+    void LCD_HD44780<MODE,BSP,ROWS,COLUMNS>::displayString(const HD44780_CMD loc, IT begin, IT end)
+    {
+      writeCommand(loc);
+      prepareData();
+      while(begin < end)
+      {
+        MODE<BSP>::writeByte(*(begin++));
+      }
+    }
 
   };
+
 };
 
 
