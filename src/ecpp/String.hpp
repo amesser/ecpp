@@ -26,7 +26,7 @@ namespace ecpp
      overflow = convertToDecimal(buffer, digits, value);
 
      uint_fast8_t i;
-     for(i = 0; i < digits; ++i)
+     for(i = 0; i < (digits-1); ++i)
      {
        if (overflow)
        {
@@ -41,6 +41,12 @@ namespace ecpp
          buffer[i] = fill;
        }
      }
+
+     if (overflow)
+     {
+       buffer[digits] = 'X';
+     }
+
     }
 
     static void
@@ -62,7 +68,7 @@ namespace ecpp
       }
 
       uint_fast8_t i;
-      for(i = 0; i < digits; ++i)
+      for(i = 0; i < (digits - 1); ++i)
       {
         if (overflow)
         {
@@ -78,6 +84,12 @@ namespace ecpp
           buffer[i-1] = fill;
         }
       }
+
+      if (overflow)
+      {
+        buffer[digits] = 'X';
+      }
+
     }
   };
 
