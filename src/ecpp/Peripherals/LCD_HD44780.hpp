@@ -73,6 +73,7 @@ namespace ecpp {
     {
     protected:
       void delay50us() {BSP::delay(50);}
+      void delay1us() {BSP::delay(1);}
 
       uint8_t readNibble();
       void writeNibble(uint8_t data);
@@ -87,10 +88,10 @@ namespace ecpp {
       uint8_t data;
 
       BSP::setEnable();
-      delay50us();
+      delay1us();
       data = BSP::getNibble() & 0x0F;
       BSP::clearEnable();
-      delay50us();
+      delay1us();
       return data;
     }
 
@@ -99,9 +100,9 @@ namespace ecpp {
     {
       BSP::setNibble(data);
       BSP::clearEnable();
-      delay50us();
+      delay1us();
       BSP::setEnable();
-      delay50us();
+      delay1us();
     }
 
     template<class BSP>
@@ -113,6 +114,7 @@ namespace ecpp {
 
       data  = readNibble() << 4;
       data |= readNibble();
+      delay50us();
 
       return data;
     }
@@ -124,6 +126,7 @@ namespace ecpp {
 
       writeNibble((data >> 4) & 0x0F);
       writeNibble(data & 0x0F);
+      delay50us();
     }
 
     template<class BSP>
@@ -192,6 +195,7 @@ namespace ecpp {
       {
         prepareCommand();
         MODE<BSP>::writeByte(data);
+        this->delay50us();
       }
 
       uint8_t readStatus()
