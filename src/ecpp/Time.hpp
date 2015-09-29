@@ -49,24 +49,47 @@ namespace ecpp
     }
   };
 
-  template<typename C>
+  template<typename C, unsigned int TIMEBASE>
   class SimpleTimer
   {
   private:
     C Counter;
+
+    template<typename T>
+    static constexpr C convertMilliseconds(T value) { return value / TIMEBASE;}
+
+    template<typename T>
+    static constexpr C convertSeconds(T value)      { return (value * 1000UL) / TIMEBASE;}
+
+
   public:
     constexpr SimpleTimer() {}
     constexpr SimpleTimer(const C init) : Counter(init) {}
-    void start (C timeout)    {Counter = timeout;}
-    void stop  ()             {Counter = 0;}
-
-    C getElapsedTime(C timeout) const { return timeout - Counter;}
-    C getRemainingTime()        const { return Counter;}
-
-    bool hasTimedOut() const {return 0 == Counter;}
 
     template<typename T>
-    void update (T TimePassed)
+    void startMilliseconds(T timeout) { Counter = convertMilliseconds(timeout);}
+
+    template<typename T>
+    void startSeconds     (T timeout) { Counter = convertSeconds(timeout);}
+
+    void stop  ()             {Counter = 0;}
+
+    template<typename T = C>
+    constexpr T getRemainingMilliseconds()   const { return Counter * TIMEBASE;}
+
+    template<typename T = C>
+    constexpr T getRemainingSeconds()       const { return Counter * TIMEBASE / 1000;}
+
+    template<typename T>
+    constexpr T getElapsedMilliseconds(T timeout) const { return timeout - getRemainingMilliseconds<T>();}
+
+    template<typename T>
+    constexpr T getElapsedSeconds(T timeout) const { return timeout - getRemainingSeconds<T>();}
+
+    constexpr bool hasTimedOut() const {return 0 == Counter;}
+
+    template<typename T>
+    void handleTicksPassed (T TimePassed)
     {
       if (TimePassed > Counter)
       {
@@ -77,7 +100,21 @@ namespace ecpp
         Counter = Counter - TimePassed;
       }
     }
+
+    template<typename T>
+    void handleMillisecondsPassed (T Milliseconds)
+    {
+      handleTicksPassed((Milliseconds + TIMEBASE - 1) / TIMEBASE);
+    }
+
+    template<typename T>
+    void handleSecondsPassed (T Seconds)
+    {
+      handleTicksPassed((Seconds * 1000UL + TIMEBASE - 1) / TIMEBASE);
+    }
+
   };
+
 
   template<typename C, unsigned long TMOUTRANGE = TypeProperties<C>::MaxSigned >
   class Timer
