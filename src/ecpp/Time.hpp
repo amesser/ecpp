@@ -59,7 +59,7 @@ namespace ecpp
     static constexpr C convertMilliseconds(T value) { return value / TIMEBASE;}
 
     template<typename T>
-    static constexpr C convertSeconds(T value)      { return (value * 1000UL) / TIMEBASE;}
+    static constexpr C convertSeconds(T value)      { return (unsigned long)value * 1000 / TIMEBASE;}
 
 
   public:
@@ -78,7 +78,7 @@ namespace ecpp
     constexpr T getRemainingMilliseconds()   const { return Counter * TIMEBASE;}
 
     template<typename T = C>
-    constexpr T getRemainingSeconds()       const { return Counter * TIMEBASE / 1000;}
+    constexpr T getRemainingSeconds()       const { return Counter * (unsigned long)TIMEBASE / 1000;}
 
     template<typename T>
     constexpr T getElapsedMilliseconds(T timeout) const { return timeout - getRemainingMilliseconds<T>();}
