@@ -44,7 +44,7 @@ namespace ecpp
 
      if (overflow)
      {
-       buffer[digits] = 'X';
+       buffer[i] = 'X';
      }
 
     }
@@ -87,7 +87,7 @@ namespace ecpp
 
       if (overflow)
       {
-        buffer[digits] = 'X';
+        buffer[i] = 'X';
       }
 
     }
