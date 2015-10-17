@@ -37,6 +37,7 @@ def build(bld):
     sourcefiles = {
         'avr-' : [
             'ecpp/Target/AVR8/Memory.cpp',
+            'ecpp/String.cpp',
             'ecpp/Time.cpp',
         ],
         
