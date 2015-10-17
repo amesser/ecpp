@@ -13,6 +13,9 @@
 
 namespace ecpp {
   namespace Peripherals {
+    template<template<class> class MODE, class BSP, int ROWS, int COLUMNS>
+    class LCD_HD44780;
+
     class HD44780_CMD
     {
     protected:
@@ -71,10 +74,9 @@ namespace ecpp {
     template<class BSP>
     class HD44780_MODE_4BIT : public BSP
     {
+    private:
+      void delayEnable();
     protected:
-      void delay50us() {BSP::delay(50);}
-      void delay1us() {BSP::delay(1);}
-
       uint8_t readNibble();
       void writeNibble(uint8_t data);
       uint8_t readByte();
@@ -83,26 +85,28 @@ namespace ecpp {
     };
 
     template<class BSP>
+    void HD44780_MODE_4BIT<BSP>::delayEnable()
+    {
+      _delay_us(1);
+    }
+
+    template<class BSP>
     uint8_t HD44780_MODE_4BIT<BSP>::readNibble()
     {
       uint8_t data;
 
       BSP::setEnable();
-      delay1us();
       data = BSP::getNibble() & 0x0F;
       BSP::clearEnable();
-      delay1us();
       return data;
     }
 
     template<class BSP>
     void HD44780_MODE_4BIT<BSP>::writeNibble(uint8_t data)
     {
+      BSP::setEnable();
       BSP::setNibble(data);
       BSP::clearEnable();
-      delay1us();
-      BSP::setEnable();
-      delay1us();
     }
 
     template<class BSP>
@@ -110,11 +114,12 @@ namespace ecpp {
     {
       uint8_t data;
 
+      BSP::waitReady();
       BSP::setRW();
 
       data  = readNibble() << 4;
       data |= readNibble();
-      delay50us();
+      BSP::setBusy(50);
 
       return data;
     }
@@ -124,9 +129,10 @@ namespace ecpp {
     {
       BSP::clearRW();
 
+      BSP::waitReady();
       writeNibble((data >> 4) & 0x0F);
       writeNibble(data & 0x0F);
-      delay50us();
+      BSP::setBusy(50);
     }
 
     template<class BSP>
@@ -136,28 +142,49 @@ namespace ecpp {
       BSP::clearRS();
 
       writeNibble(0x03);
-      BSP::delay(5000);
+      BSP::waitReady(5000);
       writeNibble(0x03);
-      BSP::delay(5000);
+      BSP::waitReady(5000);
       writeNibble(0x03);
       writeNibble(0x02);
     }
+
+    class LCD_HD44780Location
+    {
+    private:
+      uint8_t m_Location;
+
+    public:
+      LCD_HD44780Location() {};
+      constexpr LCD_HD44780Location(uint8_t Column, uint8_t Row) : m_Location (0x80 | (Column + (Row * 0x40))) {};
+      constexpr LCD_HD44780Location(const LCD_HD44780Location & Init) : m_Location (Init.m_Location) {};
+
+      bool operator != (const LCD_HD44780Location & Rhs) const {return m_Location != Rhs.m_Location;}
+      template<template<class> class MODE, class BSP, int ROWS, int COLUMNS>
+      friend class LCD_HD44780;
+    };
 
     template<template<class> class MODE, class BSP, int ROWS = 2, int COLUMNS = 16>
     class LCD_HD44780 : public MODE<BSP>
     {
     public:
       typedef char RowBufferType[COLUMNS];
+      typedef LCD_HD44780Location LocationType;
+
     private:
+      LocationType  m_CurrentLocation;
       RowBufferType m_RowBuffer;
 
-      void prepareData()    {BSP::setRS();}
-      void prepareCommand() {BSP::clearRS();}
+      void prepareData()    { BSP::waitReady(); BSP::setRS();}
+      void prepareCommand() { BSP::waitReady(); BSP::clearRS();}
 
       template<typename IT>
       void writeBytes(IT begin, IT end);
 
     public:
+      LocationType getCursorLocation() const {return m_CurrentLocation;}
+      static LocationType getLocation(uint8_t Column, uint8_t Row) {return LocationType(Column, Row);}
+
       constexpr HD44780_CMD Location(uint_fast8_t Column, uint_fast8_t Row) { return 0x80 | (Column + Row * 0x40);}
 
       RowBufferType & getBuffer() {return m_RowBuffer;}
@@ -173,10 +200,16 @@ namespace ecpp {
         writeBuffer(length);
       }
 
+
       void writeData(uint8_t data)
       {
         prepareData();
         this->writeByte(data);
+      }
+
+      void putChar(char c)
+      {
+        writeData(c);
       }
 
       void writeData(const void *p, uint8_t len)
@@ -195,7 +228,7 @@ namespace ecpp {
       {
         prepareCommand();
         MODE<BSP>::writeByte(data);
-        this->delay50us();
+        BSP::setBusy(50);
       }
 
       uint8_t readStatus()
@@ -209,13 +242,19 @@ namespace ecpp {
         writeCommand(0x80 | pos);
       }
 
+      void setCursor(const LocationType & Location)
+      {
+        writeCommand(Location.m_Location);
+        m_CurrentLocation = Location;
+      }
+
       void init()
       {
-        MODE<BSP>::delay(20000);
+        MODE<BSP>::waitReady(20000);
         MODE<BSP>::initBus();
         MODE<BSP>::InitSequence.read(m_RowBuffer);
         writeBuffer(sizeof(MODE<BSP>::InitSequence));
-        MODE<BSP>::delay(5000);
+        MODE<BSP>::waitReady(5000);
       }
 
       void clearDisplay() {writeCommand(HD44780_CMD_CLEAR);}
