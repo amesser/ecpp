@@ -17,20 +17,28 @@ namespace ecpp
   public:
     static bool convertToDecimal(char *decimal, uint8_t length, uint16_t value);
 
-
     static void
     formatUnsigned(char *buffer, uint8_t digits, uint16_t value, char fill =' ')
     {
+     uint_fast8_t i;
      bool overflow;
 
      overflow = convertToDecimal(buffer, digits, value);
 
-     uint_fast8_t i;
-     for(i = 0; i < (digits-1); ++i)
+     if(overflow)
+     {
+       fill = '#';
+     }
+
+     for(i = 0; i < digits; ++i)
      {
        if (overflow)
        {
-         buffer[i] = 'X';
+         buffer[i] = fill;
+       }
+       else if ((i + 1) >= digits)
+       {
+         break;
        }
        else if (buffer[i] != '0')
        {
@@ -41,17 +49,34 @@ namespace ecpp
          buffer[i] = fill;
        }
      }
+    }
 
-     if (overflow)
-     {
-       buffer[i] = 'X';
-     }
+    /** insert a decimal point into the given formated number */
+    static void
+    formatFrac(char *buffer, uint8_t digits, uint8_t prec)
+    {
+      while(digits >= 2)
+      {
+        digits = digits - 1;
 
+        if (prec > 0)
+        {
+          buffer[digits] = buffer[digits-1];
+          prec--;
+        }
+        else
+        {
+          buffer[digits] = '.';
+          break;
+        }
+
+      }
     }
 
     static void
     formatSigned(char *buffer, uint8_t digits, int16_t value, char fill =' ')
     {
+      uint_fast8_t i;
       bool overflow;
       char sign;
 
@@ -67,77 +92,33 @@ namespace ecpp
         overflow = overflow | (buffer[0] != '0');
       }
 
-      uint_fast8_t i;
-      for(i = 0; i < (digits - 1); ++i)
+      for(i = 0; i < digits; ++i)
       {
         if (overflow)
         {
-          buffer[i] = 'X';
+          buffer[i] = '#';
         }
-        else if (buffer[i] != '0')
-        {
+        else if ((i+1) >= digits)
+        { /* last digit in string */
           break;
         }
         else
         {
-          buffer[i]   = sign;
-          buffer[i-1] = fill;
+          if(buffer[i+1] != '0')
+          { /* next digit is first non-zero digit */
+            buffer[i] = sign;
+            break;
+          }
+          else
+          { /* next digit is zero */
+            buffer[i] = fill;
+          }
         }
       }
-
-      if (overflow)
-      {
-        buffer[i] = 'X';
-      }
-
     }
   };
 
-  bool
-  String::convertToDecimal(char *decimal, uint8_t length, uint16_t value)
-  {
-    uint_fast8_t overflow;
-    uint_fast8_t j;
 
-    for(j = 0; j < length; ++j)
-    {
-      decimal[j] = '0';
-    }
-
-    overflow = 0;
-    for(j = 0; j < 16; ++j)
-    {
-      uint_fast8_t i;
-      uint8_t      mask;
-
-      mask = (value & 0x8000) ? 0x01 : 0;
-      value = value << 1;
-
-      i = length;
-      while(i--)
-      {
-        uint_fast8_t bcd;
-
-        bcd = static_cast<uint8_t>(decimal[i]) - '0';
-
-        if(bcd >= 5)
-        {
-          bcd += 3;
-        }
-
-        bcd   = (bcd << 1) | mask;
-
-        mask  = (bcd & 0x10) >> 4;
-        bcd   = bcd & 0x0F;
-
-        decimal[i] = bcd + '0';
-      }
-
-      overflow = overflow | mask;
-    }
-
-    return overflow != 0;
-  }
 };
 
 
