@@ -234,11 +234,11 @@ namespace ecpp {
   };
 
   template<typename T, int N>
-  T
+  typename UnsignedIntTypeEstimator<N * TypeProperties<T>::MaxUnsigned>::Type
   sum(const T (& Values)[N])
   {
     auto Idx = UnsignedIntTypeEstimator<N>::Value;
-    T Sum = 0;
+    typename UnsignedIntTypeEstimator<N * TypeProperties<T>::MaxUnsigned>::Type Sum = 0;
 
     while(Idx > 0)
     {
