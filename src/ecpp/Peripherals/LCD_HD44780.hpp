@@ -105,7 +105,13 @@ namespace ecpp {
     void HD44780_MODE_4BIT<BSP>::writeNibble(uint8_t data)
     {
       BSP::setEnable();
+      BSP::setEnable();
+      BSP::setEnable();
       BSP::setNibble(data);
+      BSP::setEnable();
+      BSP::clearEnable();
+      BSP::clearEnable();
+      BSP::clearEnable();
       BSP::clearEnable();
     }
 
@@ -154,6 +160,8 @@ namespace ecpp {
     private:
       uint8_t m_Location;
 
+    private:
+      LCD_HD44780Location(uint8_t Raw) : m_Location (0x80 | Raw) {};
     public:
       LCD_HD44780Location() {};
       constexpr LCD_HD44780Location(uint8_t Column, uint8_t Row) : m_Location (0x80 | (Column + (Row * 0x40))) {};
@@ -185,8 +193,6 @@ namespace ecpp {
       LocationType getCursorLocation() const {return m_CurrentLocation;}
       static LocationType getLocation(uint8_t Column, uint8_t Row) {return LocationType(Column, Row);}
 
-      constexpr HD44780_CMD Location(uint_fast8_t Column, uint_fast8_t Row) { return 0x80 | (Column + Row * 0x40);}
-
       RowBufferType & getBuffer() {return m_RowBuffer;}
 
       void writeBuffer(uint_fast8_t length)
@@ -210,6 +216,7 @@ namespace ecpp {
       void putChar(char c)
       {
         writeData(c);
+        m_CurrentLocation = LocationType(m_CurrentLocation.m_Location + 1);
       }
 
       void writeData(const void *p, uint8_t len)
@@ -237,15 +244,16 @@ namespace ecpp {
         return MODE<BSP>::readByte();
       }
 
-      void moveCursor(uint8_t pos)
-      {
-        writeCommand(0x80 | pos);
-      }
 
       void setCursor(const LocationType & Location)
       {
         writeCommand(Location.m_Location);
         m_CurrentLocation = Location;
+      }
+
+      void moveCursor(uint8_t pos)
+      {
+        setCursor(LocationType(pos));
       }
 
       void init()
