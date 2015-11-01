@@ -61,8 +61,11 @@ namespace ecpp
     void sendStartAndWrite(uint8_t address, uint8_t len);
     void sendStartAndRead(uint8_t address, uint8_t len);
     void sendStop();
+    void sendStopStartAndRead(uint8_t address, uint8_t len);
+    void close() {TWCR = 0;}
 
     bool    hasFinished() {return m_Idx >= m_Len;}
+    bool    hasNack()     {return m_Len == 0;}
     uint8_t getError()    {return (m_Len == 0) ? (TWSR & 0xF8) : 0;}
     uint8_t getStatus()   {return (TWSR & 0xF8);}
   };
@@ -168,6 +171,18 @@ namespace ecpp
   {
     TWCR = _BV(TWINT) | _BV(TWSTO) /* | _BV(TWIE) */ | _BV(TWEN);
   }
+
+  template<unsigned int N>
+  void TWIMaster<N>::sendStopStartAndRead(uint8_t address, uint8_t len)
+  {
+    m_Buffer[0] = (address << 1) | 0x01;
+    m_Idx       = 0;
+    m_Len       = len + 1;
+
+    //while(TWCR & _BV(TWSTO));
+    TWCR = _BV(TWINT) | _BV(TWSTA) | _BV(TWSTO) | _BV(TWEN);
+  }
+
 };
 #endif
 #endif /* ECPP_TARGET_AVR8_TWI_HPP_ */
