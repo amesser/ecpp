@@ -1,42 +1,65 @@
 /*
- * TWI.hpp
+ *  Copyright 2015 Andreas Messer <andi@bastelmap.de>
  *
- *  Created on: 04.10.2015
- *      Author: andi
- */
-
+ *  This file is part of the Embedded C++ Platform Project.
+ *
+ *  Embedded C++ Platform Project (ECPP) is free software: you can
+ *  redistribute it and/or modify it under the terms of the GNU General
+ *  Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later
+ *  version.
+ *
+ *  Embedded C++ Platform Project is distributed in the hope that it
+ *  will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ *  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with ECPP.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  As a special exception, the copyright holders of ECPP give you
+ *  permission to link ECPP with independent modules to produce an
+ *  executable, regardless of the license terms of these independent
+ *  modules, and to copy and distribute the resulting executable under
+ *  terms of your choice, provided that you also meet, for each linked
+ *  independent module, the terms and conditions of the license of that
+ *  module.  An independent module is a module which is not derived from
+ *  or based on ECPP.  If you modify ECPP, you may extend this exception
+ *  to your version of ECPP, but you are not obligated to do so.  If you
+ *  do not wish to do so, delete this exception statement from your
+ *  version.
+ *  */
 #ifndef ECPP_TARGET_AVR8_TWI_HPP_
 #define ECPP_TARGET_AVR8_TWI_HPP_
 
 #include <ecpp/Arch/AVR8.hpp>
 #include <ecpp/Datatypes.hpp>
 
+//#define TWCR
+
 #if defined (TWCR)
 namespace ecpp
 {
-  template<unsigned int N>
   class TWIMaster
   {
-  private:
-    uint8_t m_Buffer[N+1];
-    uint8_t m_Idx;
-    uint8_t m_Len;
   public:
-    typedef uint8_t TransferBufferType[N];
-
-    template<typename T = TransferBufferType>
-    T & getBuffer()
+    enum State
     {
-      union
-      {
-        T*       pReturn;
-        uint8_t* pBuffer;
-      };
+      STATUS_OK   =  0,
+      STATUS_NACK = -1,
+      STATUS_ERR  = -2,
+      STATUS_BUSY = -3,
+    };
 
-      pBuffer = &(m_Buffer[1]);
-      return *pReturn;
-    }
+  private:
 
+    uint8_t*   m_pBuffer;
+    uint8_t    m_Len;
+    uint8_t    m_AddressDir;
+
+    void sendStartAndTransfer(uint_fast8_t AddressDir, uint8_t *pbBuffer, uint_fast8_t Len);
+
+  public:
     void init(uint32_t Frequency)
     {
       /* TWBR * 4^TWPS */
@@ -55,134 +78,31 @@ namespace ecpp
       TWCR = _BV(TWINT) | _BV(TWSTO) | _BV(TWEN) /* | _BV(TWIE) */;
     }
 
-    void handleIrq();
     void handleCyclic();
-
-    void sendStartAndWrite(uint8_t address, uint8_t len);
-    void sendStartAndRead(uint8_t address, uint8_t len);
-    void sendStop();
-    void sendStopStartAndRead(uint8_t address, uint8_t len);
-    void close() {TWCR = 0;}
-
-    bool    hasFinished() {return m_Idx >= m_Len;}
-    bool    hasNack()     {return m_Len == 0;}
-    uint8_t getError()    {return (m_Len == 0) ? (TWSR & 0xF8) : 0;}
-    uint8_t getStatus()   {return (TWSR & 0xF8);}
-  };
-
-  template<unsigned int N>
-  void TWIMaster<N>::handleIrq()
-  {
-    TWCR = TWCR & ~(_BV(TWIE) | _BV(TWSTA));
-  }
-
-  template<unsigned int N>
-  void TWIMaster<N>::handleCyclic()
-  {
-    if(TWCR & _BV(TWINT) && m_Len > m_Idx)
+    void close()
     {
-      uint8_t status = TWSR & 0xF8;
-
-      switch(status)
-      {
-      case 0x08: /* start condition */
-      case 0x10: /* repeated start cond */
-        if(m_Idx < m_Len)
-        {
-          TWDR  = m_Buffer[m_Idx];
-          TWCR  = /*_BV(TWIE) |*/ _BV(TWEN) | _BV(TWINT);
-        }
-        break;
-      case 0x18: /* sla+w + ack */
-      case 0x28: /* write + ack  */
-        {
-          m_Idx += 1;
-
-          if(m_Idx < m_Len)
-          {
-            TWDR   = m_Buffer[m_Idx];
-            TWCR  = /*_BV(TWIE) | */ _BV(TWEN) | _BV(TWINT);
-          }
-        }
-        break;
-      case 0x20: /* sla+w + nack */
-      case 0x30: /* write + nack */
-      case 0x48: /* sla+r + nack, */
-      case 0x58: /* read  + nack return */
-        m_Len = 0; /* this means nack */
-        break;
-  #if 0
-      case 0x38: /* arbitration lost */
-        if(m_Idx < m_Len)
-        {
-          TWCR = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWSTA) | _BV(TWINT);
-        }
-        break;
-  #endif
-      case 0x40: /* sla+r + ack */
-        {
-          m_Idx += 1;
-
-          if(m_Idx < m_Len)
-          {
-            TWCR  = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWEA) | _BV(TWINT);
-          }
-        }
-        break;
-      case 0x50: /* read + ack return */
-        {
-          m_Buffer[m_Idx] = TWDR;
-          m_Idx += 1;
-
-          if(m_Idx < m_Len)
-          {
-            TWCR  = /* _BV(TWIE) | */ _BV(TWEN) | _BV(TWEA) | _BV(TWINT);
-          }
-        }
-        break;
-      }
+      TWCR      = 0;
+      m_pBuffer = 0;
     }
-  }
 
-  template<unsigned int N>
-  void TWIMaster<N>::sendStartAndWrite(uint8_t address, uint8_t len)
-  {
-    m_Buffer[0] = (address << 1);
-    m_Idx       = 0;
-    m_Len       = len + 1;
+    enum State getStatus() const {return m_pBuffer ? STATUS_BUSY : (enum State)m_AddressDir;}
 
-    //while(TWCR & _BV(TWSTO));
-    TWCR = _BV(TWINT) | _BV(TWSTA) /* | _BV(TWIE) */ | _BV(TWEN);
-  }
+    void sendStartAndRead(uint_fast8_t SlaveAddress, uint8_t *pbBuffer, uint_fast8_t Len)
+    {
+      sendStartAndTransfer((SlaveAddress << 1) | 0x01, pbBuffer, Len);
+    }
 
-  template<unsigned int N>
-  void TWIMaster<N>::sendStartAndRead(uint8_t address, uint8_t len)
-  {
-    m_Buffer[0] = (address << 1) | 0x01;
-    m_Idx       = 0;
-    m_Len       = len + 1;
+    void sendStartAndWrite(uint_fast8_t SlaveAddress, uint8_t *pbBuffer, uint_fast8_t Len)
+    {
+      sendStartAndTransfer((SlaveAddress << 1), pbBuffer, Len);
+    }
 
-    //while(TWCR & _BV(TWSTO));
-    TWCR = _BV(TWINT) | _BV(TWSTA) /* | _BV(TWIE) */ | _BV(TWEN);
-  }
+    void continuedRead(uint8_t *pbBuffer, uint_fast8_t Len);
 
-  template<unsigned int N>
-  void TWIMaster<N>::sendStop()
-  {
-    TWCR = _BV(TWINT) | _BV(TWSTO) /* | _BV(TWIE) */ | _BV(TWEN);
-  }
+    void continuedWrite(uint8_t *pbBuffer, uint_fast8_t Len);
 
-  template<unsigned int N>
-  void TWIMaster<N>::sendStopStartAndRead(uint8_t address, uint8_t len)
-  {
-    m_Buffer[0] = (address << 1) | 0x01;
-    m_Idx       = 0;
-    m_Len       = len + 1;
-
-    //while(TWCR & _BV(TWSTO));
-    TWCR = _BV(TWINT) | _BV(TWSTA) | _BV(TWSTO) | _BV(TWEN);
-  }
-
+    void sendStop();
+  };
 };
 #endif
 #endif /* ECPP_TARGET_AVR8_TWI_HPP_ */
