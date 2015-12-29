@@ -92,3 +92,15 @@ def ecpp_linkerscript(self):
 
         if linkerscript:
             t.env.append_value('LINKFLAGS', '-T%s' % linkerscript)
+
+@feature('ecpp')
+@after_method('process_source')
+@before_method('apply_link')
+def ecpp_updatecompiledtask(self):
+    """Create object files in a subdirectory in order to allow using same source file
+       for different build ids"""
+
+    for t in getattr(self,'compiled_tasks',[]):
+        node = t.inputs[0]
+        out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
+        t.outputs[0] = node.parent.find_or_declare(out)
