@@ -253,6 +253,11 @@ namespace ecpp
       *(this->PORT) = *(this->PORT) | outputs;
     }
 
+    uint8_t getOutputs()
+    {
+      return *(this->PORT);
+    }
+
     void updateOutputs(uint8_t outputs, uint8_t mask)
     {
 

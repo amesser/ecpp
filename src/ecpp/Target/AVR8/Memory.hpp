@@ -186,6 +186,8 @@ namespace ecpp
     constexpr ConstFlashIterator(const T *Ptr) : m_Ptr(Ptr) {}
     constexpr bool operator < (ConstFlashIterator & rhs) const { return m_Ptr < rhs.m_Ptr;}
 
+    int operator - (const ConstFlashIterator & rhs) const {return m_Ptr - rhs.m_Ptr;}
+
     ConstFlashIterator operator ++ (int) {return {m_Ptr++};}
 
     T operator * () const {
