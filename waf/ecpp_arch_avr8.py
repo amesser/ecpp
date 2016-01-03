@@ -30,15 +30,14 @@
 # to your version of ECPP, but you are not obligated to do so.  If you
 # do not wish to do so, delete this exception statement from your
 # version.
-
-from waflib.TaskGen import feature, after_method
+from waflib.TaskGen   import feature, after_method
 from waflib.Configure import conf
 import os.path
 
 @feature('avr-firmware')
 @after_method('apply_link')
-def generate_firmware(self):
-  if 'cxxprogram' in self.features:
+def ecpp_generate_avr8_firmware(self):
+  if 'cprogram' in self.features or 'cxxprogram' in self.features:
       elf_node = self.link_task.outputs[0]
       self.strip_task = self.create_task('strip',elf_node,None)
     
@@ -61,7 +60,7 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
     conf.ecpp_setuptoolchain('avr8')
 
     create = envname not in conf.all_envs
-    
+
     if create:
       conf.setenv(envname, conf.env)
       

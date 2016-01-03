@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# ecpp library build script
+# ARM microprocessor build support
 #
-# Copyright 2013 Andreas Messer <andi@bastelmap.de>
+# Copyright 2016 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
 #
@@ -32,39 +32,27 @@
 # to your version of ECPP, but you are not obligated to do so.  If you
 # do not wish to do so, delete this exception statement from your
 # version.
+from waflib.Configure import conf
+from waflib import Utils
 
-def build(bld):
-    sourcefiles = {
-        'avr-' : [
-            'ecpp/Target/AVR8/Memory.cpp',
-            'ecpp/Target/AVR8/TWI.cpp',
-            'ecpp/String.cpp',
-            'ecpp/Time.cpp',
-        ],
-        
-        'default' : [
-            'common/syscalls.cc',
-        ],
-    }
+@conf
+def ecpp_3rdpartybuild_arm_cmsis(bld, id, path, **kw):
+    env = bld.all_envs[id]
 
-    for id,env in bld.all_envs.items():
-        if env['ECPP_BUILDLIB']:
+    base_path = bld.path.find_dir(path)
 
-          if not env.get_flat('ECPP_ENVNAME'):
-              bld.fatal('ECPP_ENVNAME not set for "%s"' % id)
+    if not base_path:
+        bld.fatal("Path '%s' not found" % path)
 
-          prefix = env['TOOL_PREFIX']
+    source = Utils.to_list(kw.get('source',[]))[:]
+    source.extend(base_path.ant_glob(['*.c', '*.s']))
+    
+    includes = Utils.to_list(kw.get('includes',[]))[:]
+    includes.extend([path])
 
-          source = sourcefiles.get(prefix, sourcefiles['default'])
-
-          bld.ecpp_build( 
-              id       = id,
-              target   = env.get_flat('ECPP_LIBNAME'),
-              source   = source,
-              includes = ['.'],
-              export_includes = [bld.path],
-              features = 'cxx cxxstlib'
-          )
-
-
-   
+    kw['source']          = source
+    kw['includes']        = includes
+    kw['export_includes'] = [path]
+    kw['features']        = 'c cstlib cxx cxxstlib'
+    
+    bld.ecpp_build(id = id, **kw)

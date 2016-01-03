@@ -34,6 +34,9 @@
 # version.
 
 from waflib.Configure import conf, find_program as find_program_orig 
+from waflib.Tools.ccroot import USELIB_VARS
+
+USELIB_VARS['ecpp'] = set(['LINKERSCRIPT'])
 
 tool_prefixes = {
   'avr8'    : ['avr-'],
@@ -53,6 +56,7 @@ def find_program(self,filename,**kw):
 def options(opt):
     opt.load('gcc')
     opt.load('gxx')
+
 
 @conf
 def ecpp_setuptoolchain(conf, arch):

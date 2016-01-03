@@ -84,11 +84,13 @@ def ecpp_generate_map(self):
 
 
 @feature('ecpp')
-@after_method('apply_link')
+@after_method('apply_link', 'propagate_uselib_vars')
 def ecpp_linkerscript(self):
+    from waflib.Tools.ccroot import USELIB_VARS
+    
     if 'cprogram' in self.features or 'cxxprogram' in self.features:
         t = self.link_task
-        linkerscript = t.env['LINKERSCRIPT']
+        linkerscript = t.env.get_flat('LINKERSCRIPT').strip()
 
         if linkerscript:
             t.env.append_value('LINKFLAGS', '-T%s' % linkerscript)
@@ -102,5 +104,9 @@ def ecpp_updatecompiledtask(self):
 
     for t in getattr(self,'compiled_tasks',[]):
         node = t.inputs[0]
+
+        if not t.env['ECPP_ENVNAME']:
+            self.bld.fatal('ECPP Environment name for "%s" not set' % node.name)
+        
         out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
         t.outputs[0] = node.parent.find_or_declare(out)

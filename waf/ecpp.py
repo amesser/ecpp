@@ -68,7 +68,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
             if func:
                 func(**dict(kw))
                 break
-            
+
         conf.setenv(envname,conf.env)
         conf.env['ECPP_ENVNAME'] = envname
 
