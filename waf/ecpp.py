@@ -55,7 +55,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 
     for k,v in kw:
         module = 'ecpp_%s_%s' % (k,v)
-         
+
         if os.path.exists(os.path.join(conf.env['ECPP_DIR'], 'waf' , module + '.py')):
             conf.load(module)
 
@@ -67,21 +67,40 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
             func = getattr(conf,'ecpp_setupbuild_%s_%s' % (k,v),None)
             if func:
                 func(**dict(kw))
-                break    
+                break
+            
+        conf.setenv(envname,conf.env)
+        conf.env['ECPP_ENVNAME'] = envname
 
-    conf.setenv(envname,conf.env)
-    # override build flag
-    conf.env['ECPP_BUILDLIB'] = False
+        # override build flag
+        if conf.env['ECPP_BUILDLIB_TARGET']:
+            conf.env['ECPP_BUILDLIB'] =  True
+
+            ecpp_libname = 'ecpp_build_%s' % id.lower()
+            conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
+            conf.env.append_value('ECPP_USE',     [ecpp_libname])
+        else:
+            conf.env['ECPP_BUILDLIB'] =  False
+    else:
+        conf.fatal("Doubly defined build id")
+
 
 @conf
 def ecpp_build(bld, id, **kw):
     env = bld.all_envs[id]
     
-    features = Utils.to_list(kw.get('features',[])) 
+    features = Utils.to_list(kw.get('features',[]))[:] 
     features.append('ecpp')
     features.extend(env['ECPP_FEATURES'])
 
+    use = Utils.to_list(kw.get('use',[]))[:]
+    use.extend(env['ECPP_USE'])
+
+    if kw['target'] in use:
+        use.remove(kw['target'])
+
     kw['features'] = features
+    kw['use']      = use
 
     bld(env=env,**kw)
 

@@ -295,10 +295,10 @@ namespace Platform {
       static constexpr CordicState CordicArgTranslator(double arg)
       {
         return (arg > 2 * m_pi) ? CordicArgTranslator(arg - 2 * m_pi) :
-               ((arg < 0) ? CordicArgTranslator(arg + 2 * m_pi) :
+               ((arg <= 0) ? CordicArgTranslator(arg + 2 * m_pi) :
                ((arg > m_pi) ?
                    CordicState{0,-1,arg - 3 * m_pi / 2} :
-                   CordicState{0, 1,arg - 1 * m_pi / 2}));
+                   CordicState{0,+1,arg - 1 * m_pi / 2}));
       }
 
       class SqrtArg

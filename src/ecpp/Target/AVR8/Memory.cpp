@@ -1,5 +1,5 @@
 /*
- *  Copyright 2013 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2015 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,14 +29,28 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef INDICES_HPP_
-#define INDICES_HPP_
+#include "Memory.hpp"
 
-#include <util/datatypes.hpp>
-#include <util/vamath.hpp>
+namespace ecpp
+{
+  /* template<> */
+  uint16_t MemoryHelper<2>::getEEPROM(const void *p)
+  {
+    union {
+      uint8_t  bytes[2];
+      uint16_t value;
+    };
 
-namespace Platform {
-  namespace Util {
+    eeprom_busy_wait();
+
+    EEAR  = reinterpret_cast<uint16_t>(p);
+    EECR |= 1 << EERE;
+    bytes[0] = EEDR;
+
+    EEAR  = reinterpret_cast<uint16_t>(p) + 1;
+    EECR |= 1 << EERE;
+    bytes[1] = EEDR;
+
+    return value;
   }
 }
-#endif /* INDICES_HPP_ */

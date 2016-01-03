@@ -34,13 +34,31 @@
 # version.
 
 def build(bld):
+    sourcefiles = {
+        'avr-' : [
+            'ecpp/Target/AVR8/Memory.cpp',
+            'ecpp/Target/AVR8/TWI.cpp',
+            'ecpp/String.cpp',
+            'ecpp/Time.cpp',
+        ],
+        
+        'default' : [
+            'common/syscalls.cc',
+        ],
+    }
+
     for id,env in bld.all_envs.items():
         if env['ECPP_BUILDLIB']:
+          prefix = env['TOOL_PREFIX']
+
+          source = sourcefiles.get(prefix, sourcefiles['default'])
+          
           bld.ecpp_build( 
               id       = id,
-              target   = 'ecpp_%s' % env['DEVICE'].lower(),
-              source   = ['common/syscalls.cc'],
+              target   = env.get_flat('ECPP_LIBNAME'),
+              source   = source,
               includes = ['.'],
+              export_includes = [bld.path],
               features = 'cxx cxxstlib'
           )
 

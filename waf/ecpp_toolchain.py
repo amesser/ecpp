@@ -61,10 +61,9 @@ def ecpp_setuptoolchain(conf, arch):
     arch = arch.lower()
     envname = 'toolchain_%s' % arch
 
-    create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-    
-    if create:
+    if envname not in conf.all_envs:
+      conf.setenv(envname, conf.env)
+      
       for prefix in tool_prefixes[arch]:
         try:
           conf.env.stash()
@@ -72,17 +71,21 @@ def ecpp_setuptoolchain(conf, arch):
           
           conf.load('gcc')
           conf.load('gxx')
+          conf.load('gas')
 
           conf.find_program(['strip'],   var='STRIP')
           conf.find_program(['objcopy'], var='OBJCOPY')
           conf.find_program(['objdump'], var='OBJDUMP')
+          conf.find_program(['nm'],      var='NM')
 
-          conf.env.append_value('CFLAGS',    ['-Wall'])
-          conf.env.append_value('CXXFLAGS',  ['-std=c++11','-Wall'])
+          conf.env.append_value('CFLAGS',    ['-g', '-Wall'])
+          conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000'])
         except conf.errors.ConfigurationError:
           conf.env.revert()
         else:
           break
       else:
         conf.fatal('Could not find a valid toolchain for "%s".' % arch)
+    else:
+      conf.setenv(envname)
 

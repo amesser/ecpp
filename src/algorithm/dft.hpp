@@ -81,7 +81,8 @@ namespace Platform {
         typedef Platform::Util::Datatypes::Complex<TYPE> t_Type;
 
         typedef RamBuffer<m_bins/2, t_Type>  FactorArrayType;
-        typedef RamBuffer<m_bins, uint8_t>   DescrambleArrayType;
+        typedef RamBuffer<m_bins/2, unsigned int> DescrambleArrayTypeHalf;
+        typedef RamBuffer<m_bins,   unsigned int> DescrambleArrayTypeFull;
 
         /* class to generate the dft factors. This includes normalization!!! */
         template<typename MATH>
@@ -95,7 +96,7 @@ namespace Platform {
             return {  MATH::cos(2 * MATH::m_pi * k / m_bins), -MATH::sin(2 * MATH::m_pi * k/ m_bins)};
           }
 
-          template<std::size_t... Is>
+          template<size_t... Is>
           constexpr FactorArrayType asArray_real(indices<Is...>) const
           {
             return { { (*this)[Is]...,}};
@@ -111,18 +112,28 @@ namespace Platform {
         public:
           constexpr descramble() {};
 
-          constexpr uint8_t operator [] (uint8_t idx) const {
+          constexpr unsigned int operator [] (unsigned int idx) const {
             return reverseBits<POWER>(idx);
           }
 
-          template<std::size_t... Is>
-          constexpr DescrambleArrayType asArray_real(indices<Is...>) const
+          template<size_t... Is>
+          constexpr DescrambleArrayTypeHalf asArrayHalf_real(indices<Is...>) const
           {
             return { { (*this)[Is]...,}};
           }
 
-          constexpr DescrambleArrayType asArray() const {
-            return this->asArray_real(build_indices<m_bins/2>());
+          template<size_t... Is>
+          constexpr DescrambleArrayTypeFull asArrayFull_real(indices<Is...>) const
+          {
+            return { { (*this)[Is]...,}};
+          }
+
+          constexpr DescrambleArrayTypeHalf asArrayHalf() const {
+            return this->asArrayHalf_real(build_indices<m_bins/2>());
+          }
+
+          constexpr DescrambleArrayTypeFull asArrayFull() const {
+            return this->asArrayFull_real(build_indices<m_bins>());
           }
         };
 

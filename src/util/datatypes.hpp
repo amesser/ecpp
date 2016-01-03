@@ -33,14 +33,12 @@
 #define DATATYPES_HPP_
 
 #include <stdint.h>
-
-namespace std {
-  typedef __SIZE_TYPE__ size_t;
-}
+#include <stddef.h>
 
 namespace Platform {
   namespace Util {
     namespace Datatypes {
+      using namespace ::std;
 
       template<unsigned int BYTES>
       class UnsignedIntType { public: typedef UnsignedIntType<BYTES + 1> Type; };
@@ -97,11 +95,12 @@ namespace Platform {
         return UnsignedIntTypeEstimator<sizeof(TYPE)>::Value;
       };
 
+#if 0
       template<typename TYPE, unsigned long COUNT>
       constexpr auto ElementCount(const TYPE (& type)[COUNT]) -> typename UnsignedIntTypeEstimator<COUNT>::Type {
         return UnsignedIntTypeEstimator<COUNT>::Value;
       };
-
+#endif
 
       template<typename TYPE, unsigned long SCALE>
       class FixedPoint;
@@ -128,9 +127,13 @@ namespace Platform {
       public:
         constexpr FixedPoint() {};
 
+        constexpr FixedPoint(const FixedPoint<TYPE,SCALE> &init) :
+          m_value( init.m_value) {};
+
         template<typename INIT>
         constexpr FixedPoint(const INIT &value, const unsigned long & scale = 1) :
           m_value( rescale(value,scale)) {};
+
 
         template<typename CAST>
         operator CAST () const {return static_cast<CAST>(m_value) / SCALE;}
@@ -249,11 +252,15 @@ namespace Platform {
       template<typename FRIEND_TYPE, unsigned long FRIEND_SCALE>
       friend class FixedPoint;
 
+      template<typename FRIEND_TYPE>
+      friend class Complex;
+
 #ifdef  _GLIBCXX_OSTREAM
       friend std::ostream& operator<< <TYPE,SCALE>(std::ostream& stream, const FixedPoint& fp);
 #endif
 
       };
+
 
 #ifdef  _GLIBCXX_OSTREAM
       template<typename TYPE, unsigned long SCALE>
@@ -263,8 +270,6 @@ namespace Platform {
       }
 #endif
 
-      template<typename TYPE>
-      class Complex;
 
 #ifdef  _GLIBCXX_OSTREAM
       template<typename TYPE>

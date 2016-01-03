@@ -4,9 +4,12 @@ ENTRY(_start)
 
 MEMORY
 {
-  FLASH(rx)         : ORIGIN = 0x08000000,  LENGTH = 512K
-  CCM(rwx)          : ORIGIN = 0x10000000,  LENGTH = 64K
-  SRAM(rwx)         : ORIGIN = 0x20000000,  LENGTH = 128K
+  INTRAM0(rwx)      : ORIGIN = 0x00000000,  LENGTH = 32K
+  INTRAM1(rwx)      : ORIGIN = 0x00008000,  LENGTH = 32K
+  INTRAM2(rwx)      : ORIGIN = 0x00010000,  LENGTH = 32K
+  INTRAM4(rwx)      : ORIGIN = 0x00018000,  LENGTH = 32K
+  DTCM(rw)          : ORIGIN = 0x10000000,  LENGTH = 8K
+  SDRAM(rwx)        : ORIGIN = 0x80000000,  LENGTH = 8M
 }
 
 SECTIONS
@@ -99,20 +102,28 @@ SECTIONS
     *(.gnu.warning)
     *(.gnu.linkonce.t*)
     *(.glue_7t) *(.glue_7)
-  } >SRAM = 0
+  } >SDRAM
+  
   .init          : 
   { 
     KEEP (*(.init))
-  } >SRAM = 0
+  } >SDRAM
+  
+  .ARM.exidx : 
+  {
+    __exidx_start = .;
+    *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+    __exidx_end = .;
+  } > SDRAM
   _etext = .;
   PROVIDE (etext = .);
   .fini      :
   {
     KEEP (*(.fini))
-  } >SRAM = 0
-  .rodata   : { *(.rodata) *(.rodata.*) *(.gnu.linkonce.r*) } >SRAM
-  .rodata1   : { *(.rodata1) } >SRAM
-  .eh_frame_hdr : { *(.eh_frame_hdr) } >SRAM
+  } >SDRAM = 0
+  .rodata   : { *(.rodata) *(.rodata.*) *(.gnu.linkonce.r*) } >SDRAM
+  .rodata1   : { *(.rodata1) } >SDRAM
+  .eh_frame_hdr : { *(.eh_frame_hdr) } >SDRAM
 
   /* data segment *>
   /* Adjust the address for the data segment.  We want to adjust up to
@@ -124,10 +135,10 @@ SECTIONS
     *(.data.*)
     *(.gnu.linkonce.d*)
     SORT(CONSTRUCTORS)
-  } >SRAM
-  .data1   : { *(.data1) } >SRAM
-  .eh_frame : { KEEP (*(.eh_frame)) } >SRAM
-  .gcc_except_table : { *(.gcc_except_table) } >SRAM
+  } >SDRAM
+  .data1   : { *(.data1) } >SDRAM
+  .eh_frame : { KEEP (*(.eh_frame)) } >SDRAM
+  .gcc_except_table : { *(.gcc_except_table) } >SDRAM
   .ctors   : 
   {
     /* gcc uses crtbegin.o to find the start of
@@ -147,17 +158,17 @@ SECTIONS
     KEEP (*(EXCLUDE_FILE (*crtend.o ) .ctors))
     KEEP (*(SORT(.ctors.*)))
     KEEP (*(.ctors))
-  } >SRAM
+  } >SDRAM
    .dtors         :
   {
     KEEP (*crtbegin.o(.dtors))
     KEEP (*(EXCLUDE_FILE (*crtend.o ) .dtors))
     KEEP (*(SORT(.dtors.*)))
     KEEP (*(.dtors))
-  } >SRAM
-  .jcr            : { KEEP (*(.jcr)) } >SRAM
-  .got           : { *(.got.plt) *(.got) } >SRAM
-  .dynamic       : { *(.dynamic) } >SRAM
+  } >SDRAM
+  .jcr            : { KEEP (*(.jcr)) } >SDRAM
+  .got           : { *(.got.plt) *(.got) } >SDRAM
+  .dynamic       : { *(.dynamic) } >SDRAM
   /* We want the small data sections together, so single-instruction offsets
      can access them all, and initialized data all before uninitialized, so
      we can shorten the on-disk segment size.  */
@@ -166,28 +177,21 @@ SECTIONS
     *(.sdata) 
     *(.sdata.*)
     *(.gnu.linkonce.s.*)
-  } >SRAM
+  } >SDRAM
   _edata = .;
   PROVIDE (edata = .);
-  
-  __exidx_start = .;
-  .ARM.exidx   : { 
-    *(.ARM.exidx* .gnu.linkonce.armexidx.*) 
-  } >SRAM
-  __exidx_end = .;
-
 
   /* bss segment */
   __bss_start = .;
   __bss_start__ = .;
-  .sbss      :
+  .sbss (NOLOAD):
   {
     *(.dynsbss)
     *(.sbss)
     *(.sbss.*)
     *(.scommon)
-  } >SRAM
-  .bss       :
+  } >SDRAM
+  .bss (NOLOAD):
   {
    *(.dynbss)
    *(.bss)
@@ -197,19 +201,19 @@ SECTIONS
       _end.  Align after .bss to ensure correct alignment even if the
       .bss section disappears because there are no input sections.  */
    . = ALIGN(32 / 8);
-  } >SRAM
+  } >SDRAM
   . = ALIGN(32 / 8);
   _end = .;
   _bss_end__ = . ; __bss_end__ = . ; __end__ = . ;
   PROVIDE (end = .);
 
   /* stacks */
-  .stack ALIGN(0x4000) : { 
+  .stack ALIGN(0x4000) (NOLOAD): { 
     *(.stack)
     LONG(0);
     . = ALIGN(0x4000);
     __stack = .;
-  } >SRAM
+  } >SDRAM
 
 
   /* These must appear regardless of  .  */

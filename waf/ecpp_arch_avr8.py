@@ -38,19 +38,20 @@ import os.path
 @feature('avr-firmware')
 @after_method('apply_link')
 def generate_firmware(self):
-  elf_node = self.link_task.outputs[0]
-  self.strip_task = self.create_task('strip',elf_node,None)
-
-  tsk = self.create_task('listing', elf_node, elf_node.change_ext('.lst'))
-  tsk.set_run_after(self.strip_task)
-
-  tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.hex'))
-  tsk.set_run_after(self.strip_task)
-  tsk.env.OBJCOPY_FLAGS = '-R .eeprom'.split()
-
-  tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.eep'))
-  tsk.set_run_after(self.strip_task)
-  tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
+  if 'cxxprogram' in self.features:
+      elf_node = self.link_task.outputs[0]
+      self.strip_task = self.create_task('strip',elf_node,None)
+    
+      tsk = self.create_task('listing', elf_node, elf_node.change_ext('.lst'))
+      tsk.set_run_after(self.strip_task)
+    
+      tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.hex'))
+      tsk.set_run_after(self.strip_task)
+      tsk.env.OBJCOPY_FLAGS = '-R .eeprom'.split()
+    
+      tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.eep'))
+      tsk.set_run_after(self.strip_task)
+      tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
 
 @conf
 def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
@@ -60,14 +61,15 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
     conf.ecpp_setuptoolchain('avr8')
 
     create = envname not in conf.all_envs
-    conf.setenv(envname, conf.env)
-
+    
     if create:
-      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
+      conf.setenv(envname, conf.env)
+      
+      for x in 'ASFLAGS CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mmcu=%s' % device.lower()])
 
       for x in 'CFLAGS CXXFLAGS'.split():
-        conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums'])
+        conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums', '-fomit-frame-pointer'])
 
       conf.env.append_value('LINKFLAGS', ['--static', '-Wl,--gc-sections'])
       
@@ -75,4 +77,11 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
       conf.env.append_value('INCLUDES', n.abspath())
 
       conf.env['DEVICE'] = device
+
+      # Mark this env to build a ecpp library for
+      # each target independently
+      
+      conf.env['ECPP_BUILDLIB_TARGET'] = True
       conf.env.append_value('ECPP_FEATURES',['avr-firmware'])
+    else:
+        conf.setenv(envname)

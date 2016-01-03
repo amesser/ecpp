@@ -45,6 +45,11 @@ class ihex(Task.Task):
     run_str = '${OBJCOPY} -O ihex ${OBJCOPY_FLAGS} ${SRC} ${TGT}'
     vars    = ['OBJDUMP_FLAGS']
 
+class binary(Task.Task):
+    color   = 'GREEN'
+    run_str = '${OBJCOPY} -O binary ${OBJCOPY_FLAGS} ${SRC} ${TGT}'
+    vars    = ['OBJDUMP_FLAGS']
+
 class listing(Task.Task):
     color   = 'GREEN'
     run_str = '${OBJDUMP} -D ${SRC} > ${TGT}'
@@ -53,6 +58,12 @@ class compilelisting(c.c):
         "generate a compiler assembler listing"
         run_str = '${CXX} -Wa,-adhln -g ${ARCH_ST:ARCH} ${CXXFLAGS} ${CPPFLAGS} ${FRAMEWORKPATH_ST:FRAMEWORKPATH} ${CPPPATH_ST:INCPATHS} ${DEFINES_ST:DEFINES} ${CXX_SRC_F}${SRC} -o/dev/null >${TGT}'
 
+class copy(Task.Task):
+    color   = 'GREEN'
+    def run(self):
+        for i,o in zip(self.inputs,self.outputs):
+            o.write(i.read("rb"),"wb")
+        
 @feature('listings')
 @after_method('apply_link')
 def generate_listings(self):
@@ -81,3 +92,15 @@ def ecpp_linkerscript(self):
 
         if linkerscript:
             t.env.append_value('LINKFLAGS', '-T%s' % linkerscript)
+
+@feature('ecpp')
+@after_method('process_source')
+@before_method('apply_link')
+def ecpp_updatecompiledtask(self):
+    """Create object files in a subdirectory in order to allow using same source file
+       for different build ids"""
+
+    for t in getattr(self,'compiled_tasks',[]):
+        node = t.inputs[0]
+        out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
+        t.outputs[0] = node.parent.find_or_declare(out)

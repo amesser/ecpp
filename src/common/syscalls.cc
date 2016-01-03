@@ -34,9 +34,27 @@
 #include "common/syscalls.h"
 #include <stdint.h>
 
-void _exit(int) {
-  volatile uint8_t dummy = 1;
+
+extern "C" {
+
+
+volatile uint8_t dummy = 1;
+
+void abort()
+{
 
   /* loop forever */
-  while (1 == dummy);
+  while (1) dummy = 1;
 }
+
+void _exit(int)
+{
+  abort();
+}
+
+void atexit()
+{
+}
+
+
+};

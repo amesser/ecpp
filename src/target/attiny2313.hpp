@@ -47,7 +47,22 @@ namespace Platform {
         };
 
         static void selectSleepMode(enum SLEEPMODE mode) {set_sleep_mode(mode);}
-        static void enterSleepMode()                     {sleep_mode();}
+
+        static void prepareSleep()
+        {
+          sleep_enable();
+        }
+
+        static void enterSleep()
+        {
+          sleep_cpu();
+          sleep_disable();
+        }
+
+        static void preventSleep() __attribute__((always_inline))
+        {
+          sleep_disable();
+        }
       };
 
       class ATTiny2313 {
