@@ -187,8 +187,11 @@ namespace ecpp {
     return UnsignedIntTypeEstimator<sizeof(TYPE)>::Value;
   };
 
+  template<typename TYPE>
+  constexpr void ElementCount(const TYPE (& type));
+
   template<typename TYPE, unsigned long COUNT>
-  constexpr typename UnsignedIntTypeEstimator<COUNT>::Type ElementCount(const TYPE (& type)[COUNT]) {
+  constexpr typename UnsignedIntTypeEstimator<COUNT>::Type ElementCount(const TYPE (&)[COUNT]) {
     return UnsignedIntTypeEstimator<COUNT>::Value;
   };
 

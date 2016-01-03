@@ -38,6 +38,7 @@
 
 #include "ecpp/VaTemplate.hpp"
 #include "ecpp/Datatypes.hpp"
+#include "ecpp/Array.hpp"
 
 namespace ecpp
 {
@@ -204,12 +205,18 @@ namespace ecpp
   private:
     T m_Value[ELEMENTS];
 
-  public:
-    template<typename ...I>
-    constexpr FlashVariable(const T& a, const T& b, const I&... rem) : m_Value{a, b, static_cast<T>(rem)...} {};
-
     template<typename INIT, int INITELEMENTS, ::ecpp::indices_type ...Is>
     constexpr FlashVariable(const INIT (&init)[INITELEMENTS], ::ecpp::indices<Is...>) : m_Value{init[Is]...} {};
+
+    template<typename INIT, ::ecpp::indices_type ...Is>
+    constexpr FlashVariable(const RamBuffer<ELEMENTS, INIT> &Init, ::ecpp::indices<Is...>) : m_Value{static_cast<T>(Init[Is])...} {};
+
+  public:
+    template<typename INIT>
+    constexpr FlashVariable(const RamBuffer<ELEMENTS, INIT> &Init) : FlashVariable(Init, ::ecpp::build_indices<ELEMENTS>()) {};
+
+    template<typename ...I>
+    constexpr FlashVariable(const T& a, const T& b, const I&... rem) : m_Value{a, b, static_cast<T>(rem)...} {};
 
     template<typename INIT, int INITELEMENTS>
     constexpr FlashVariable(const INIT (&init)[INITELEMENTS]) : FlashVariable(init, ::ecpp::build_indices<min(INITELEMENTS, ELEMENTS)>()) {};
