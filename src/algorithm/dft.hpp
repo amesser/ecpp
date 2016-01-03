@@ -81,7 +81,7 @@ namespace Platform {
         typedef Platform::Util::Datatypes::Complex<TYPE> t_Type;
 
         typedef RamBuffer<m_bins/2, t_Type>  FactorArrayType;
-        typedef RamBuffer<m_bins/2, uint8_t> DescrambleArrayType;
+        typedef RamBuffer<m_bins, uint8_t>   DescrambleArrayType;
 
         /* class to generate the dft factors. This includes normalization!!! */
         template<typename MATH>
