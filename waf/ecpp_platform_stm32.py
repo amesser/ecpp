@@ -105,8 +105,14 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
     else:
       conf.setenv(envname)
       
-st_stm32_spl_defines = {
-  'stm32f405' : 'STM32F405xx USE_HAL_DRIVER',
+st_stm32_spl_vars = {
+  'stm32f405' : {
+     'DEFINES' : 'STM32F405xx USE_HAL_DRIVER',
+  }
+}
+
+st_stm32_spl_startup = {
+  'stm32f405' : 'startup_stm32f405xx.s',
 }
 
 @conf
@@ -114,18 +120,23 @@ def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
     global st_stm32_spl_defines
     env = bld.all_envs[id]
     
+    vars     = st_stm32_spl_vars[env['DEVICE']]
+    startup  = st_stm32_spl_startup[env['DEVICE']]
+
     base_path = bld.path.find_dir(path)
     
     if not base_path:
         bld.fatal("Path '%s' not found" % path)
 
     source = Utils.to_list(kw.get('source',[]))[:]
-    source.extend(base_path.ant_glob(['*.c', '*.s']))
+    source.extend(base_path.ant_glob(['*.c']))
+    source.append(base_path.find_node(startup))
     
     includes = Utils.to_list(kw.get('includes',[]))[:]
     includes.extend([path])
 
-    export_defines = Utils.to_list(st_stm32_spl_defines[env['DEVICE']])
+
+    export_defines = Utils.to_list(vars['DEFINES'])
     
     defines = Utils.to_list(kw.get('defines',[]))[:]
     defines.extend(export_defines)

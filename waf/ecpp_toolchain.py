@@ -82,6 +82,7 @@ def ecpp_setuptoolchain(conf, arch):
           conf.find_program(['objdump'], var='OBJDUMP')
           conf.find_program(['nm'],      var='NM')
 
+          conf.env.append_value('ASFLAGS',   ['-g'])
           conf.env.append_value('CFLAGS',    ['-g', '-Wall'])
           conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000'])
         except conf.errors.ConfigurationError:
