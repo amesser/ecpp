@@ -87,8 +87,8 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 
 @conf
 def ecpp_build(bld, id, **kw):
-    env = bld.all_envs[id]
-    
+    env = bld.all_envs[id].derive()
+
     features = Utils.to_list(kw.get('features',[]))[:] 
     features.append('ecpp')
     features.extend(env['ECPP_FEATURES'])

@@ -135,16 +135,19 @@ def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
     includes = Utils.to_list(kw.get('includes',[]))[:]
     includes.extend([path])
 
-
     export_defines = Utils.to_list(vars['DEFINES'])
     
     defines = Utils.to_list(kw.get('defines',[]))[:]
     defines.extend(export_defines)
 
+    features = Utils.to_list(kw.get('features',[]))[:]
+    features.extend(Utils.to_list('c cstlib cxx cxxstlib'))
+
     kw['source']          = source
     kw['includes']        = includes
+    kw['defines']         = defines
     kw['export_includes'] = [path]
     kw['export_defines']  = export_defines
-    kw['features']        = 'c cstlib cxx cxxstlib'
+    kw['features']        = features
     
     bld.ecpp_build(id = id, **kw)
