@@ -8,6 +8,10 @@
 
 using namespace ecpp;
 
+/** convert a number into decimal format
+ *
+ * Implementation uses double dabble algorithm
+ */
 bool
 String::convertToDecimal(char *decimal, uint8_t length, uint16_t value)
 {

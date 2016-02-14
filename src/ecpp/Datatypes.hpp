@@ -42,13 +42,24 @@ namespace ecpp {
   template<>
   class TypeProperties<uint8_t>
   {
-    public:
-      static constexpr uint8_t MaxSigned   = 0x7F;
-      static constexpr uint8_t MaxUnsigned = 0xFF;
+  public:
+    static constexpr uint8_t Max     = 0xFF;
+    static constexpr uint8_t Min     = 0x00;
+
+    static constexpr uint8_t MaxSigned   = 0x7F;
+    static constexpr uint8_t MaxUnsigned = 0xFF;
   };
 
   template<>
-  class TypeProperties<int8_t> : public TypeProperties<uint8_t> {};
+  class TypeProperties<int8_t>
+  {
+  public:
+    static constexpr int8_t  Max         = 0x7F;
+    static constexpr int8_t  Min         = 0x80;
+
+    static constexpr uint8_t MaxSigned   = 0x7F;
+    static constexpr uint8_t MaxUnsigned = 0xFF;
+  };
 
   template<>
   class TypeProperties<uint16_t>
