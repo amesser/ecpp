@@ -33,6 +33,7 @@
 #define ECPP_GRAPHICS_TEXTFRAMEBUFFER_HPP_
 
 #include "ecpp/Datatypes.hpp"
+#include <string.h>
 
 namespace ecpp
 {
@@ -128,6 +129,11 @@ namespace ecpp
       m_DirtyCnt |= 0x1;
       return *reinterpret_cast<RowBufferType*>(&(m_Framebuffer[RowCursor.asIndex()]));
     }
+
+    constexpr CursorType begin(void) const {return CursorType(0,0);}
+    constexpr CursorType end(void)   const {return CursorType(COLUMNS,ROWS);}
+
+    void clear(char value = ' ');
   };
 
   template<int COLUMNS, int ROWS>
@@ -176,6 +182,14 @@ namespace ecpp
       }
     }
   }
+
+  template<int COLUMNS, int ROWS>
+  void TextFramebuffer<COLUMNS, ROWS>::clear(char value)
+  {
+    m_DirtyCnt |= 0x1;
+    memset(m_Framebuffer, value, sizeof(m_Framebuffer));
+  }
+
 }
 
 
