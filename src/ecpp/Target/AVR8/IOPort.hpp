@@ -258,6 +258,11 @@ namespace ecpp
       return *(this->PORT);
     }
 
+    uint8_t getInputs() const
+    {
+      return *(this->PIN);
+    }
+
     void updateOutputs(uint8_t outputs, uint8_t mask)
     {
 
