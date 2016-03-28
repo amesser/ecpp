@@ -63,6 +63,8 @@ def build(bld):
               source   = source,
               includes = ['.'],
               export_includes = [bld.path],
+              cflags   = ['-ffunction-sections', '-fdata-sections'],
+              cxxflags = ['-ffunction-sections', '-fdata-sections'],
               features = 'cxx cxxstlib'
           )
 
