@@ -13,42 +13,6 @@
 
 namespace ecpp
 {
-  template<typename T>
-  class Clock
-  {
-  private:
-    T Counter;
-
-  public:
-    template<typename C>
-    C delta(C val)
-    {
-      return val - static_cast<C>(Counter);
-    }
-
-    template<typename C>
-    void advance(C val)
-    {
-      Counter += val;
-    }
-
-    template<typename C>
-    void update(C val)
-    {
-      advance(delta(val));
-    }
-
-    constexpr T value()
-    {
-      return Counter;
-    }
-
-    void init(T value)
-    {
-      Counter = value;
-    }
-  };
-
   template<typename C, unsigned int TIMEBASE>
   class SimpleTimer
   {
@@ -171,48 +135,54 @@ namespace ecpp
 
   class Time
   {
-  protected:
-    uint8_t m_Seconds;
-    uint8_t m_Minutes;
-    uint8_t m_Hours;
   public:
+    typedef uint8_t SecondType;
+    typedef uint8_t MinuteType;
+    typedef uint8_t HourType;
+  protected:
+    SecondType m_Second;
+    MinuteType m_Minute;
+    HourType   m_Hour;
+
+  public:
+    SecondType getSecond() const {return m_Second;}
+    MinuteType getMinute() const {return m_Minute;}
+    HourType   getHour()   const {return m_Hour;}
 
 
-    uint8_t getSeconds() const {return m_Seconds;}
-    uint8_t getMinutes() const {return m_Minutes;}
-    uint8_t getHours()   const {return m_Hours;}
+    void setSeconds(SecondType Seconds)
+    {
+      m_Second = Seconds;
+    }
+
+    void setMinute(MinuteType Minute)
+    {
+      m_Minute = Minute;
+    }
+
+    void setHour(HourType Hour)
+    {
+      m_Hour = Hour;
+    }
 
     static uint32_t calculateSecondsOfDay(uint8_t Hour, uint8_t Minute, uint8_t Second);
 
-    uint32_t getSecondsOfDay() const { return calculateSecondsOfDay(m_Hours, m_Minutes, m_Seconds);}
+    static constexpr HourType getHoursPerDay()
+    {
+      return 24;
+    }
+
+    static constexpr MinuteType getMinutesPerHour()
+    {
+      return 60;
+    }
+
+    uint32_t getSecondsOfDay() const { return calculateSecondsOfDay(m_Hour, m_Minute, m_Second);}
 
     static constexpr uint32_t getMaxMonotonic() { return 60UL * 60 * 24 - 1;};
     uint32_t getMonotonic() const { return getSecondsOfDay();}
 
-    void tick()
-    {
-      if (m_Seconds < 59)
-      {
-        m_Seconds += 1;
-      }
-      else if (m_Minutes < 59)
-      {
-        m_Seconds = 0;
-        m_Minutes += 1;
-      }
-      else if (m_Hours < 23)
-      {
-        m_Seconds = 0;
-        m_Minutes = 0;
-        m_Hours   += 1;
-      }
-      else
-      {
-        m_Seconds = 0;
-        m_Minutes = 0;
-        m_Hours   = 0;
-      }
-    }
+    bool tick();
 
     class Timer
     {
@@ -266,6 +236,86 @@ namespace ecpp
         updateTimeout(Hours, Minutes, Seconds);
       }
     };
+  };
+
+  class Date
+  {
+  public:
+    typedef uint16_t YearType;
+    typedef uint8_t  MonthType;
+    typedef uint8_t  DayType;
+  protected:
+    YearType  m_Year;
+    MonthType m_Month;
+    DayType   m_Day;
+  public:
+    YearType  getYear()  const {return m_Year;}
+    MonthType getMonth() const {return m_Month;}
+    DayType   getDay()   const {return m_Day;}
+
+    void      setYear  (YearType Year)  {m_Year = Year;}
+    void      setMonth(MonthType Month) {m_Month = Month;}
+    void      setDay  (DayType   Day)   {m_Day = Day;}
+
+    DayType             getDaysPerMonth()  const;
+    constexpr MonthType getMonthsPerYear() {return 12;}
+    constexpr YearType  getMaxYear()       {return ~(static_cast<YearType>(0));}
+
+    void next();
+  };
+
+  class DateTime
+  {
+  protected:
+    Date m_Date;
+    Time m_Time;
+  public:
+    Date::YearType   getYear()  const {return m_Date.getYear();}
+    Date::MonthType  getMonth() const {return m_Date.getMonth();}
+    Date::DayType    getDay()   const {return m_Date.getDay();}
+
+    Time::SecondType getSecond() const {return m_Time.getSecond();}
+    Time::MinuteType getMinute() const {return m_Time.getMinute();}
+    Time::HourType   getHour()   const {return m_Time.getHour();}
+
+
+    const Date & getDate() const
+    {
+      return m_Date;
+    }
+
+    void setDate(const Date & date)
+    {
+      m_Date = date;
+      m_Time.setSeconds(0);
+    }
+
+    const Time & getTime() const
+    {
+      return m_Time;
+    }
+
+    void setTime(const Time & Time)
+    {
+      m_Time = Time;
+      m_Time.setSeconds(0);
+    }
+
+    void formatUTCTime(char* Buffer) const;
+
+    void tick();
+
+    /** Check if the date time object contains valid values
+     * for date and time
+     */
+    bool isValid(void) const;
+  };
+
+  template<class DT>
+  class Clock : public DT
+  {
+  public:
+
   };
 
   class WeekTime
