@@ -115,7 +115,10 @@ namespace ecpp
     CursorType     m_CursorUpdate;
     uint_least8_t  m_DirtyCnt;
 
-    char           m_Framebuffer[getBufferSize()];
+    union {
+      char           m_Framebuffer[getBufferSize()];
+      RowBufferType  m_Rows[ROWS];
+    };
   public:
 
     template<typename DEVICE>
@@ -129,6 +132,8 @@ namespace ecpp
       m_DirtyCnt |= 0x1;
       return *reinterpret_cast<RowBufferType*>(&(m_Framebuffer[RowCursor.asIndex()]));
     }
+
+    void setRow(const RowCursorType RowCursor, const RowBufferType & Buffer);
 
     constexpr CursorType begin(void) const {return CursorType(0,0);}
     constexpr CursorType end(void)   const {return CursorType(COLUMNS,ROWS);}
@@ -188,6 +193,18 @@ namespace ecpp
   {
     m_DirtyCnt |= 0x1;
     memset(m_Framebuffer, value, sizeof(m_Framebuffer));
+  }
+
+  template<int COLUMNS, int ROWS>
+  void TextFramebuffer<COLUMNS, ROWS>::setRow(const RowCursorType RowCursor, const RowBufferType & Buffer)
+  {
+    RowBufferType & Row = m_Rows[RowCursor.getRow()];
+
+    if(memcmp(&Buffer,&Row, sizeof(Buffer)))
+    {
+      m_DirtyCnt |= 0x1;
+      memcpy(&Row, &Buffer, sizeof(Row));
+    }
   }
 
 }
