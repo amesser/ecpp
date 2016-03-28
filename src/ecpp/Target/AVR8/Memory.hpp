@@ -64,6 +64,26 @@ namespace ecpp
   };
 
   template<>
+  struct MemoryHelper<0>
+  {
+  public:
+    void readEEPROM(const void* p, uint16_t Size)
+    {
+      eeprom_read_block(this, p, Size);
+    }
+
+    void writeEEPROM(void* p, uint16_t Size) const
+    {
+      eeprom_update_block(this, p, Size);
+    }
+
+    void readFlash(const void* p, uint16_t Size)
+    {
+      memcpy_P(this, p, Size);
+    }
+  };
+
+  template<>
   struct MemoryHelper<1>
   {
   private:
@@ -238,6 +258,13 @@ namespace ecpp
     {
       MemoryHelper<min(sizeof(FlashVariable), sizeof(B))> *b = reinterpret_cast<MemoryHelper<min(sizeof(FlashVariable), sizeof(B))>*>(&buffer);
       b->readFlash(&m_Value);
+    }
+
+    template<typename B, typename SIZETYPE>
+    void read(B * Buffer, SIZETYPE Size) const
+    {
+      MemoryHelper<0> *b = reinterpret_cast<MemoryHelper<0>*>(Buffer);
+      b->readFlash(&m_Value, min(sizeof(FlashVariable), Size));
     }
 
     ConstFlashIterator<T>
