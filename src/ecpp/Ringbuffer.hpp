@@ -71,7 +71,17 @@ namespace ecpp {
 
     }
 
+    void pushForced()
+    {
+      const IndexType WriteIndex = _WriteIndex;
+      _WriteIndex = WriteIndex+1;
+    }
+
     inline TYPE & front() {
+      return _buf[_ReadIndex % getSize()];
+    }
+
+    inline const TYPE & front() const {
       return _buf[_ReadIndex % getSize()];
     }
 

@@ -74,16 +74,18 @@ namespace ecpp
     }
 
     static void
-    formatSigned(char *buffer, uint8_t digits, int16_t value, char fill =' ')
+    formatSigned(char *buffer, uint8_t digits, int16_t value, char fill =' ', char sign = '\x00')
     {
       uint_fast8_t i;
       bool overflow;
-      char sign;
 
       if(value >= 0)
       {
         overflow = convertToDecimal(buffer, digits, value);
-        sign = fill;
+        if (sign == 0)
+        {
+          sign = fill;
+        }
       }
       else
       {
