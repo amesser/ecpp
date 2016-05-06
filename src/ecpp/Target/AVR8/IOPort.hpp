@@ -174,6 +174,18 @@ namespace ecpp
       *(IOPin::PORT) &= ~MASK;
     }
 
+    static void toggleOutput() __attribute__((always_inline))
+    {
+      if(getInput())
+      {
+        clearOutput();
+      }
+      else
+      {
+        setOutput();
+      }
+    }
+
     static bool getOutput() __attribute__((always_inline))
     {
       return 0 != (*(IOPin::PORT) & MASK);
