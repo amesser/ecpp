@@ -31,6 +31,22 @@ namespace ecpp {
       _ReadIndex = 0;
     }
 
+    constexpr IndexType getInsertPos() const
+    {
+      return _WriteIndex % getSize();
+    }
+
+    TYPE* getInsertElem()
+    {
+      if(getCount() < getSize())
+      {
+        return &_buf[getInsertPos()];
+      }
+      {
+        return 0;
+      }
+    }
+
     TYPE (& getBuffer()) [SIZE] { return _buf;}
 
     TYPE pop() {
@@ -86,6 +102,10 @@ namespace ecpp {
     }
 
     inline TYPE & back() {
+      return _buf[(_WriteIndex - 1) % getSize()];
+    }
+
+    inline const TYPE & back() const {
       return _buf[(_WriteIndex - 1) % getSize()];
     }
 
