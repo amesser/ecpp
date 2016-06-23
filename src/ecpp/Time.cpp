@@ -12,159 +12,47 @@
 
 namespace ecpp
 {
-  bool Time::tick()
+  bool isLeapYear(uint_fast8_t Century, uint_fast8_t Year)
   {
-    bool Overflow = false;
+    bool leap;
 
-    if (m_Second < 59)
+    if(Year == 0)
     {
-      m_Second += 1;
-    }
-    else if (m_Minute < 59)
-    {
-      m_Second = 0;
-      m_Minute += 1;
-    }
-    else if (m_Hour < 23)
-    {
-      m_Second = 0;
-      m_Minute = 0;
-      m_Hour   += 1;
+      leap = (0 == (Century % 4));
     }
     else
     {
-      m_Second = 0;
-      m_Minute = 0;
-      m_Hour   = 0;
-
-      Overflow = true;
+      leap = (0 == (Year % 4));
     }
 
-    return Overflow;
+    return leap;
   }
 
-  uint32_t Time::calculateSecondsOfDay(uint8_t Hour, uint8_t Minute, uint8_t Second)
+  uint_fast8_t calcDaysPerMonth(uint_fast8_t Month, bool isLeapYear)
   {
-    return (uint32_t)((uint16_t)Hour * 60 + Minute) * 60 + Second;
-  }
+    uint8_t days;
 
-  Date::DayType
-  Date::getDaysPerMonth() const
-  {
-    uint8_t DaysPerMonth;
-
-    /* calculate number of days */
-    if(m_Month == 2)
+    if (Month == 1)
     {
-      uint16_t Century,YearCentury;
-      uint8_t Selector;
-
-      Century     = m_Year / 100;
-      YearCentury = Century * 100;
-
-      if(0 == (m_Year - YearCentury))
-      { /* Year is an even multiple of 100 */
-        Selector = Century;
+      if (isLeapYear)
+      {
+        days = 29;
       }
       else
       {
-        Selector = m_Year;
-      }
-
-      if(0 == (Selector % 4))
-      {
-        DaysPerMonth = 29;
-      }
-      else
-      {
-        DaysPerMonth = 28;
+        days = 28;
       }
     }
-    else if(m_Month < 8)
+    else if (Month < 7)
     {
-      DaysPerMonth = 30 + ((m_Month) % 2);
+      days = 31 - (Month % 2);
     }
     else
     {
-      DaysPerMonth = 30 + ((m_Month + 1) % 2);
+      days = 30 + (Month % 2);
     }
 
-    return DaysPerMonth;
-  }
-
-  void Date::next()
-  {
-    /* step date */
-    if(m_Day < getDaysPerMonth())
-    {
-      m_Day += 1;
-    }
-    else if (m_Month < getMonthsPerYear())
-    {
-      m_Month += 1;
-      m_Day    = 1;
-    }
-    else if (m_Year < getMaxYear())
-    {
-      m_Year  = m_Year + 1;
-      m_Month = 1;
-      m_Day   = 1;
-    }
-  }
-
-  void DateTime::tick()
-  {
-    if(0 != m_Date.getDay() &&
-       0 != m_Date.getMonth())
-    {
-      bool DayWrap;
-
-      DayWrap = m_Time.tick();
-
-      if(DayWrap)
-      {
-        m_Date.next();
-      }
-    }
-  }
-
-  bool
-  DateTime::isValid(void) const
-  {
-    bool valid;
-
-    if (0 == getMonth())
-    {
-      valid = false;
-    }
-    else if (0 == getDay())
-    {
-      valid = false;
-    }
-    else
-    {
-      valid = true;
-    }
-
-    return valid;
-  }
-
-  void
-  DateTime::formatUTCTime(char* Buffer) const
-  {
-     /* YYYY-MM-DDTHH:MM:SSZ */
-     String::convertToDecimal(&(Buffer[0]),  4, m_Date.getYear());
-     Buffer[4] = '-';
-     String::convertToDecimal(&(Buffer[5]),  2, m_Date.getMonth());
-     Buffer[7] = '-';
-     String::convertToDecimal(&(Buffer[8]),  2, m_Date.getDay());
-     Buffer[10] = 'T';
-     String::convertToDecimal(&(Buffer[11]), 2, m_Time.getHour());
-     Buffer[13] = ':';
-     String::convertToDecimal(&(Buffer[14]), 2, m_Time.getMinute());
-     Buffer[16] = ':';
-     String::convertToDecimal(&(Buffer[17]), 2, m_Time.getSecond());
-     Buffer[19] = 'Z';
+    return days;
   }
 
   void WeekTime::incSecond(uint8_t inc)
@@ -230,5 +118,88 @@ namespace ecpp
     return l;
   }
 
+  bool Time::add(TimeDelta rhs)
+  {
+    uint_fast8_t tmp;
+
+    tmp = Second + rhs.Second;
+
+    if (tmp >= 60)
+    {
+      Second = tmp - 60;
+      tmp    = 1 + Minute + rhs.Minute;
+    }
+    else
+    {
+      Second = tmp;
+      tmp    = Minute + rhs.Minute;
+    }
+
+    if (tmp >= 60)
+    {
+      Minute = tmp - 60;
+      tmp    = 1 + Hour + rhs.Hour;
+    }
+    else
+    {
+      Minute = tmp;
+      tmp    = Hour + rhs.Hour;
+    }
+
+    if(tmp >= 24)
+    {
+      Hour = tmp - 24;
+      tmp = 1;
+    }
+    else
+    {
+      Hour = tmp;
+      tmp = 0;
+    }
+
+    return tmp != 0;
+  }
+
+  bool Time::sub(TimeDelta rhs)
+  {
+    uint_fast8_t tmp;
+
+    tmp = Second - rhs.Second;
+
+    if (tmp >= 60)
+    {
+      Second = tmp + 60;
+      tmp    = Minute - rhs.Minute - 1;
+    }
+    else
+    {
+      Second = tmp;
+      tmp    = Minute - rhs.Minute;
+    }
+
+    if (tmp >= 60)
+    {
+      Minute = tmp + 60;
+      tmp    = Hour - rhs.Hour - 1;
+    }
+    else
+    {
+      Minute = tmp;
+      tmp    = Hour - rhs.Hour;
+    }
+
+    if(tmp >= 24)
+    {
+      Hour = tmp + 24;
+      tmp = 1;
+    }
+    else
+    {
+      Hour = tmp;
+      tmp = 0;
+    }
+
+    return tmp != 0;
+  }
 }
 

@@ -10,6 +10,7 @@
 
 #include "ecpp/Datatypes.hpp"
 #include "ecpp/Operators.hpp"
+#include "ecpp/String.hpp"
 
 namespace ecpp
 {
@@ -133,189 +134,235 @@ namespace ecpp
     Timeout = iv;
   }
 
+  class TimeDelta
+  {
+  public:
+    uint_least8_t Hour;
+    uint_least8_t Minute;
+    uint_least8_t Second;
+  };
+
   class Time
   {
-  public:
-    typedef uint8_t SecondType;
-    typedef uint8_t MinuteType;
-    typedef uint8_t HourType;
   protected:
-    SecondType m_Second;
-    MinuteType m_Minute;
-    HourType   m_Hour;
+    uint_least8_t Hour;
+    uint_least8_t Minute;
+    uint_least8_t Second;
 
   public:
-    SecondType getSecond() const {return m_Second;}
-    MinuteType getMinute() const {return m_Minute;}
-    HourType   getHour()   const {return m_Hour;}
+    Time() {};
+    constexpr Time(uint_fast8_t Hour, uint_fast8_t Minute, uint_fast8_t Second)
+      : Hour(Hour), Minute(Minute), Second(Second) {};
 
+    uint_fast8_t getSecond() const {return Second;}
+    uint_fast8_t getMinute() const {return Minute;}
+    uint_fast8_t getHour()   const {return Hour;}
 
-    void setSeconds(SecondType Seconds)
+    bool add(TimeDelta rhs);
+    bool sub(TimeDelta rhs);
+
+    void setSecond(uint_fast8_t value) {Second = value;}
+    void set(const Time &value)
     {
-      m_Second = Seconds;
+      Hour   = value.Hour;
+      Minute = value.Minute;
+      Second = value.Second;
     }
 
-    void setMinute(MinuteType Minute)
-    {
-      m_Minute = Minute;
-    }
-
-    void setHour(HourType Hour)
-    {
-      m_Hour = Hour;
-    }
-
-    static uint32_t calculateSecondsOfDay(uint8_t Hour, uint8_t Minute, uint8_t Second);
-
-    static constexpr HourType getHoursPerDay()
-    {
-      return 24;
-    }
-
-    static constexpr MinuteType getMinutesPerHour()
-    {
-      return 60;
-    }
-
-    uint32_t getSecondsOfDay() const { return calculateSecondsOfDay(m_Hour, m_Minute, m_Second);}
-
-    static constexpr uint32_t getMaxMonotonic() { return 60UL * 60 * 24 - 1;};
-    uint32_t getMonotonic() const { return getSecondsOfDay();}
-
-    bool tick();
-
-    class Timer
-    {
-    protected:
-      uint32_t m_Timout;
-
-    public:
-      uint16_t hasTimedOut(const Time & Time)
-      {
-        auto wrap = Time::getMaxMonotonic();
-        auto dTime = Time.getMonotonic();
-
-        wrap += 1;
-
-        if(dTime < m_Timout)
-          dTime = dTime + wrap - m_Timout;
-        else
-          dTime = dTime - m_Timout;
-
-        /* we hopefully get called at elast once in an hour */
-        if (dTime > 3600)
-        {
-          dTime = 0;
-        }
-        else if (dTime == 0)
-        {
-          dTime = 1;
-        }
-
-        return dTime;
-      }
-
-      void updateTimeout(uint16_t Hours, uint16_t Minutes, uint16_t Seconds)
-      {
-        auto wrap    = Time::getMaxMonotonic();
-        auto Timeout = Time::calculateSecondsOfDay(Hours, Minutes, Seconds);
-
-        wrap += 1;
-
-        Timeout += m_Timout;
-
-        while (Timeout >= wrap)
-          Timeout -= wrap;
-
-        m_Timout = Timeout;
-      }
-
-      void initTimeout(const Time & time, uint16_t Hours, uint16_t Minutes, uint16_t Seconds)
-      {
-        m_Timout = time.getMonotonic();
-        updateTimeout(Hours, Minutes, Seconds);
-      }
-    };
   };
 
-  class Date
+
+
+  bool isLeapYear(uint_fast8_t Century, uint_fast8_t Year);
+
+  uint_fast8_t calcDaysPerMonth(uint_fast8_t Month, bool isLeapYear);
+
+  class DateDelta
   {
   public:
-    typedef uint16_t YearType;
-    typedef uint8_t  MonthType;
-    typedef uint8_t  DayType;
-  protected:
-    YearType  m_Year;
-    MonthType m_Month;
-    DayType   m_Day;
-  public:
-    YearType  getYear()  const {return m_Year;}
-    MonthType getMonth() const {return m_Month;}
-    DayType   getDay()   const {return m_Day;}
-
-    void      setYear  (YearType Year)  {m_Year = Year;}
-    void      setMonth(MonthType Month) {m_Month = Month;}
-    void      setDay  (DayType   Day)   {m_Day = Day;}
-
-    DayType             getDaysPerMonth()  const;
-    constexpr MonthType getMonthsPerYear() {return 12;}
-    constexpr YearType  getMaxYear()       {return ~(static_cast<YearType>(0));}
-
-    void next();
+    uint_least16_t Years;
+    uint_least8_t  Months;
+    uint_least8_t  Days;
   };
 
-  class DateTime
+  template<int CENTURY>
+  class FixedCenturyDate
   {
   protected:
-    Date m_Date;
-    Time m_Time;
+    static constexpr uint_least8_t  Century   = CENTURY;
+    static constexpr uint_least16_t YearStart = CENTURY * 100;
+
+     /* Highest Bit of the year variable indicates a leap year */
+    uint_least8_t Year;
+    uint_least8_t Month;
+    uint_least8_t Day;
+
+    static constexpr uint_fast8_t calcYear(uint_fast8_t Year)
+    {
+      return Year | (ecpp::isLeapYear(Century, Year) ? 0x80 : 0x00);
+    }
+
+    static constexpr uint_fast8_t limitYear(uint_fast16_t Year)
+    {
+      return max(min(Year, YearStart + 99), YearStart) - YearStart;
+    }
   public:
-    Date::YearType   getYear()  const {return m_Date.getYear();}
-    Date::MonthType  getMonth() const {return m_Date.getMonth();}
-    Date::DayType    getDay()   const {return m_Date.getDay();}
+    FixedCenturyDate() {};
+    constexpr FixedCenturyDate(uint_fast16_t Year, uint_fast8_t Month, uint_fast8_t Day)
+      : Year(calcYear(limitYear(Year))), Month(Month), Day(Day) {};
 
-    Time::SecondType getSecond() const {return m_Time.getSecond();}
-    Time::MinuteType getMinute() const {return m_Time.getMinute();}
-    Time::HourType   getHour()   const {return m_Time.getHour();}
+    uint_fast16_t getYear()  const {return YearStart + (Year & 0x7F);}
+    uint_fast8_t  getMonth() const {return Month;}
+    uint_fast8_t  getDay()   const {return Day;}
 
+    uint_fast8_t  getDaysInMonth() const {return calcDaysPerMonth(getMonth(), isLeapYear());}
 
-    const Date & getDate() const
+    bool isLeapYear() const {return (0x80 & Year);}
+    bool isValid()    const {return true;}
+
+    bool add(DateDelta rhs);
+
+    void set(FixedCenturyDate value)
     {
-      return m_Date;
+      Year  = value.Year;
+      Month = value.Month;
+      Day   = value.Day;
     }
-
-    void setDate(const Date & date)
-    {
-      m_Date = date;
-      m_Time.setSeconds(0);
-    }
-
-    const Time & getTime() const
-    {
-      return m_Time;
-    }
-
-    void setTime(const Time & Time)
-    {
-      m_Time = Time;
-      m_Time.setSeconds(0);
-    }
-
-    void formatUTCTime(char* Buffer) const;
-
-    void tick();
-
-    /** Check if the date time object contains valid values
-     * for date and time
-     */
-    bool isValid(void) const;
   };
 
-  template<class DT>
-  class Clock : public DT
+  template<int CENTURY>
+  bool FixedCenturyDate<CENTURY>::add(DateDelta rhs)
+  {
+    const uint_least8_t mask_year = 0x7F;
+    bool overflow;
+    uint_fast8_t tmp, days;
+
+    if(rhs.Days > 0)
+    {
+      days = calcDaysPerMonth(Month, isLeapYear());
+
+      tmp = Day + rhs.Days;
+
+      if (tmp >= days)
+      {
+        Day = tmp - days;
+        tmp = Month + rhs.Months + 1;
+      }
+      else
+      {
+        Day = tmp;
+        tmp = Month + rhs.Months;
+      }
+    }
+    else
+    {
+      tmp = Month + rhs.Months;
+    }
+
+    if (tmp > 11)
+    {
+      Month = tmp - 12;
+      tmp   = (Year & mask_year) + 1;
+    }
+    else
+    {
+      Month = tmp;
+      tmp   = (Year & mask_year);
+    }
+
+    if(tmp > 99 || (rhs.Years > (99 - tmp)))
+    {
+      tmp = 99;
+      overflow = true;
+    }
+    else
+    {
+      tmp = tmp + rhs.Years;
+      overflow = false;
+    }
+
+    if (tmp != (Year & mask_year))
+    { /* when year changes, recalc leap bit */
+      Year = calcYear(tmp);
+    }
+
+    days = calcDaysPerMonth(Month, isLeapYear());
+
+    if(Day >= days)
+    {
+      Day = Day - days;
+    }
+
+    return overflow;
+  }
+
+  template<typename DateType_, typename TimeType_>
+  class DateTime : public DateType_, public TimeType_
   {
   public:
+    typedef DateType_ DateType;
+    typedef TimeType_ TimeType;
 
+    constexpr TimeType getTime() const {return *this;}
+
+    void set(const TimeType& value) {TimeType::set(value);}
+    void set(const DateType& value) {DateType::set(value);}
+
+    void add(TimeDelta rhs)
+    {
+      if (TimeType::add(rhs))
+      {
+        DateType::add({0,0,1});
+      }
+    }
+  };
+
+  template<typename TimeType>
+  void formatTime(const TimeType& dt, char (&Buffer)[8]) __attribute__((noinline));
+
+  template<typename DateType>
+  void formatDate(const DateType& dt, char (&Buffer)[10]) __attribute__((noinline));
+
+  template<typename DateTimeType>
+  void formatDateTime(const DateTimeType& dt, char (&Buffer)[19]) __attribute__((noinline));
+
+
+  template<typename TimeType>
+  void formatTime(const TimeType& dt, char (&Buffer)[8])
+  {
+    Buffer[2] = ':';
+    Buffer[5] = ':';
+    String::convertToDecimal(&(Buffer[0]), 2, dt.getHour());
+    String::convertToDecimal(&(Buffer[3]), 2, dt.getMinute());
+    String::convertToDecimal(&(Buffer[6]), 2, dt.getSecond());
+  }
+
+  template<typename DateType>
+  void formatDate(const DateType& dt, char (&Buffer)[10])
+  {
+    Buffer[4] = '-';
+    Buffer[7] = '-';
+    String::convertToDecimal(&(Buffer[0]),  4, dt.getYear());
+    String::convertToDecimal(&(Buffer[5]),  2, dt.getMonth() + 1);
+    String::convertToDecimal(&(Buffer[8]),  2, dt.getDay()   + 1);
+  }
+
+  template<typename DateTimeType>
+  void formatDateTime(const DateTimeType& dt, char (&Buffer)[19])
+  {
+    Buffer[10] = 'T';
+    formatDate(dt, *reinterpret_cast< char (*)[10]>(&(Buffer[0])));
+    formatTime(dt, *reinterpret_cast< char (*)[8]>(&(Buffer[11])));
+  }
+
+  template<class DateTimeType>
+  class Clock : public DateTimeType
+  {
+  public:
+    void tick()
+    {
+      DateTimeType::add({0,0,1});
+    }
   };
 
   class WeekTime
