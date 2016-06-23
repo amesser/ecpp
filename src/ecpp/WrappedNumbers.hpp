@@ -12,6 +12,9 @@
 #include <ecpp/VaTemplate.hpp>
 
 namespace ecpp {
+
+
+
   template<typename T, int MAX>
   class WrappedInteger
   {
@@ -34,7 +37,7 @@ namespace ecpp {
     }
   public:
     constexpr WrappedInteger() {};
-    constexpr WrappedInteger(const T init) : m_value(init) {};
+    constexpr WrappedInteger(T init) : m_value(init) {};
 
     WrappedInteger operator - (WrappedInteger rhs)
     {
