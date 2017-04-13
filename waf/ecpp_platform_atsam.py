@@ -37,15 +37,16 @@ from waflib.Configure import conf
 from waflib import Utils
 import os.path
 
-stm32_vars = {
-  'stm32f405' : {
+atsam_vars = {
+  'atsam4s8b' : {
      'CFLAGS'    : ['-mcpu=cortex-m4', '-mthumb'],
      'CXXFLAGS'  : ['-mcpu=cortex-m4', '-mthumb'],
      'LINKFLAGS' : ['-mcpu=cortex-m4', '-mthumb'],
+     'DEFINES'   : ['SAM4S8B=1', '__SAM4S8B__=1', 'BOARD=USER_BOARD'],
   },
 }
 
-@feature('stm32-firmware')
+@feature('atsam-firmware')
 @after_method('apply_link')
 def ecpp_generate_stm32_firmware(self):
   if 'cprogram' in self.features or 'cxxprogram' in self.features:
@@ -59,11 +60,10 @@ def ecpp_generate_stm32_firmware(self):
       tsk.set_run_after(self.strip_task)
 
 @conf
-def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
-    global stm32_vars
+def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
+    global atsam_vars
 
-    ldscript = 'device_%s.ld' % device
-    vars     = stm32_vars[device]
+    vars     = atsam_vars[device]
 
     envname = 'device_%s' % device
 
@@ -86,41 +86,45 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
 
       conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
-      ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript))
-
-      if ldscript:
-        conf.env['LINKERSCRIPT'] = ldscript.abspath()
+      for x in 'ram flash'.split():
+          ldscript = 'device_%s_%s.ld' % (device,x)
+          ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript ))
+    
+          if ldscript:
+              conf.env['LINKERSCRIPT_%s' % x] = ldscript.abspath()
+          else:
+              conf.env['LINKERSCRIPT_%s' % x] = u'Error: Please define a linkerscript in wscript'
 
       conf.env['DEVICE'] = device
 
       # new libc needs ecpp library for support code!
-      conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
-      conf.env['STLIB_gcc'] = ['gcc', 'c']
+      conf.env['STLIB_c']   = ['gcc', 'c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
+      conf.env['STLIB_gcc'] = []
 
       # Mark this env to build a ecpp library for
       conf.env['ECPP_BUILDLIB'] = True
       conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
 
-      conf.env.append_value('ECPP_FEATURES',['stm32-firmware'])
+      conf.env.append_value('ECPP_FEATURES',['atsam-firmware'])
     else:
       conf.setenv(envname)
       
-st_stm32_spl_vars = {
-  'stm32f405' : {
-     'DEFINES' : 'STM32F405xx USE_HAL_DRIVER',
+atmel_atsam_spl_vars = {
+  'atsam4s8' : {
+     'DEFINES' : '',
   }
 }
 
-st_stm32_spl_startup = {
-  'stm32f405' : 'startup_stm32f405xx.s',
+atmel_atsam_spl_startup = {
+  'atsam4s8' : 'startup_atsam4s8.s',
 }
 
 @conf
 def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
     env = bld.all_envs[id]
     
-    vars     = st_stm32_spl_vars[env['DEVICE']]
-    startup  = st_stm32_spl_startup[env['DEVICE']]
+    vars     = atmel_atsam_spl_vars[env['DEVICE']]
+    startup  = atmel_atsam_spl_startup[env['DEVICE']]
 
     base_path = bld.path.find_dir(path)
     

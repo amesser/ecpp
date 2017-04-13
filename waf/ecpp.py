@@ -58,6 +58,9 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 
         if os.path.exists(os.path.join(conf.env['ECPP_DIR'], 'waf' , module + '.py')):
             conf.load(module)
+            break
+    else:
+        conf.fatal(u'No build support file found for build id %s' % id)
 
     conf.setenv("")
     envname    = id
@@ -68,6 +71,8 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
             if func:
                 func(**dict(kw))
                 break
+        else:
+            conf.fatal(u'No builder found for build id %s' % id)
 
         conf.setenv(envname,conf.env)
         conf.env['ECPP_ENVNAME'] = envname
@@ -87,7 +92,8 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
 
 @conf
 def ecpp_build(bld, id, **kw):
-    env = bld.all_envs[id].derive()
+    if id is not None:
+        env = bld.all_envs[id].derive()
 
     features = Utils.to_list(kw.get('features',[]))[:] 
     features.append('ecpp')

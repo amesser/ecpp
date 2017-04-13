@@ -40,21 +40,37 @@ extern "C" {
 
 volatile uint8_t dummy = 1;
 
+#if 0
 void abort()
 {
 
   /* loop forever */
   while (1) dummy = 1;
 }
+#endif
 
 void _exit(int)
 {
-  abort();
+  while (1) dummy = 1;
 }
 
 void atexit()
 {
 }
 
+void _kill(void)
+{
+  while (1) dummy = 1;
+}
+
+int _getpid(void)
+{
+  return 0;
+}
+
+void* _sbrk(void)
+{
+  return 0;
+}
 
 };

@@ -93,7 +93,7 @@ def ecpp_linkerscript(self):
         linkerscript = t.env.get_flat('LINKERSCRIPT').strip()
 
         if linkerscript:
-            t.env.append_value('LINKFLAGS', '-T%s' % linkerscript)
+            t.env.append_value('LINKFLAGS', ['-T%s' % linkerscript])
 
 @feature('ecpp')
 @after_method('process_source')
