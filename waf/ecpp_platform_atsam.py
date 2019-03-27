@@ -50,14 +50,12 @@ atsam_vars = {
 @after_method('apply_link')
 def ecpp_generate_stm32_firmware(self):
   if 'cprogram' in self.features or 'cxxprogram' in self.features:
-      elf_node      = self.link_task.outputs[0]
-      elf_node_copy = elf_node.change_ext("-cpy.elf")
+      elf_node_orig  = self.link_task.outputs[0]
+      elf_node       = elf_node_orig.change_ext(".stripped.elf")
       
-      self.create_task('copy',elf_node,elf_node_copy)
-      self.strip_task = self.create_task('strip',elf_node_copy,None)
+      self.strip_task = self.create_task('strip',elf_node_orig, elf_node)
     
-      tsk = self.create_task('ihex', [elf_node_copy], [elf_node.change_ext('.hex')])
-      tsk.set_run_after(self.strip_task)
+      tsk = self.create_task('ihex', [elf_node], [elf_node_orig.change_ext('.hex')])
 
 @conf
 def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
@@ -98,7 +96,7 @@ def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
       conf.env['DEVICE'] = device
 
       # new libc needs ecpp library for support code!
-      conf.env['STLIB_c']   = ['gcc', 'c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
+      conf.env['STLIB_c']   = ['c', 'gcc', 'ecpp_%s' % conf.env['DEVICE'].lower()]
       conf.env['STLIB_gcc'] = []
 
       # Mark this env to build a ecpp library for

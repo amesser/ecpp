@@ -38,18 +38,18 @@ import os.path
 @after_method('apply_link')
 def ecpp_generate_avr8_firmware(self):
   if 'cprogram' in self.features or 'cxxprogram' in self.features:
-      elf_node = self.link_task.outputs[0]
-      self.strip_task = self.create_task('strip',elf_node,None)
-    
-      tsk = self.create_task('listing', elf_node, elf_node.change_ext('.lst'))
-      tsk.set_run_after(self.strip_task)
-    
-      tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.hex'))
-      tsk.set_run_after(self.strip_task)
+
+      elf_node_orig = self.link_task.outputs[0]
+      elf_node = elf_node_orig.change_ext('.stripped.elf')
+
+      self.strip_task = self.create_task('strip',elf_node_orig,elf_node)
+
+      tsk = self.create_task('listing', elf_node, elf_node_orig.change_ext('.lst'))
+
+      tsk = self.create_task('ihex', elf_node, elf_node_orig.change_ext('.hex'))
       tsk.env.OBJCOPY_FLAGS = '-R .eeprom'.split()
-    
-      tsk = self.create_task('ihex', elf_node, elf_node.change_ext('.eep'))
-      tsk.set_run_after(self.strip_task)
+
+      tsk = self.create_task('ihex', elf_node, elf_node_orig.change_ext('.eep'))
       tsk.env.OBJCOPY_FLAGS = '-j .eeprom --change-section-lma .eeprom=0'.split()
 
 @conf

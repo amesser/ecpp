@@ -35,10 +35,23 @@ from waflib.Configure import conf
 from waflib.TaskGen import feature,after_method, before_method
 from waflib import Task
 from waflib.Tools import c
+import shutil
 
 class strip(Task.Task):
     color   = 'GREEN'
-    run_str = '${STRIP} -g ${SRC}'
+
+    run_str_strip = '${STRIP} -g ${TGT}'
+
+    (run_strip, strip_vars) = Task.compile_fun(run_str_strip)
+
+    vars = strip_vars
+
+    def run(self):
+        i = self.inputs[0]
+        o = self.outputs[0]
+
+        shutil.copyfile(i.abspath(), o.abspath())
+        self.run_strip()
 
 class ihex(Task.Task):
     color   = 'GREEN'
@@ -62,7 +75,7 @@ class copy(Task.Task):
     color   = 'GREEN'
     def run(self):
         for i,o in zip(self.inputs,self.outputs):
-            o.write(i.read("rb"),"wb")
+            shutil.copyfile(i.abspath(), o.abspath())
         
 @feature('listings')
 @after_method('apply_link')

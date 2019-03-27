@@ -65,35 +65,46 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
     conf.setenv("")
     envname    = id
 
-    if envname not in conf.all_envs:
-        for k,v in kw:
-            func = getattr(conf,'ecpp_setupbuild_%s_%s' % (k,v),None)
-            if func:
-                func(**dict(kw))
-                break
-        else:
-            conf.fatal(u'No builder found for build id %s' % id)
-
-        conf.setenv(envname,conf.env)
-        conf.env['ECPP_ENVNAME'] = envname
-
-        # override build flag
-        if conf.env['ECPP_BUILDLIB_TARGET']:
-            conf.env['ECPP_BUILDLIB'] =  True
-
-            ecpp_libname = 'ecpp_build_%s' % id.lower()
-            conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
-            conf.env.append_value('ECPP_USE',     [ecpp_libname])
-        else:
-            conf.env['ECPP_BUILDLIB'] =  False
-    else:
+    if envname in conf.all_envs:
         conf.fatal("Doubly defined build id")
 
+    # setup a new build environment for this particular target
+    for k,v in kw:
+        func = getattr(conf,'ecpp_setupbuild_%s_%s' % (k,v),None)
+        if func:
+            func(**dict(kw))
+            break
+    else:
+        conf.fatal(u'No builder found for build id %s' % id)
+
+    # derive a new build environment from target environment for this
+    # build id
+    conf.setenv(envname,conf.env)
+    conf.env['ECPP_ENVNAME'] = envname
+
+    # override build flag
+    if conf.env['ECPP_BUILDLIB_TARGET']:
+        conf.env['ECPP_BUILDLIB'] =  True
+
+        ecpp_libname = 'ecpp_build_%s' % id.lower()
+        conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
+        conf.env.append_value('ECPP_USE',     [ecpp_libname])
+    else:
+        conf.env['ECPP_BUILDLIB'] =  False
 
 @conf
-def ecpp_build(bld, id, **kw):
-    if id is not None:
-        env = bld.all_envs[id].derive()
+def ecpp_selectbuild(bld, id):
+    if not isinstance(bld,EcppBuildContext):
+        bld.fatal(u'Unexpected context %r' % bld)
+
+    bld.variant = id
+
+@conf
+def ecpp_build(bld, **kw):
+    if 'id' in kw:
+        env = bld.all_envs[kw['id']].derive()
+    else:
+        env = bld.env.derive()
 
     features = Utils.to_list(kw.get('features',[]))[:] 
     features.append('ecpp')
@@ -112,3 +123,24 @@ def ecpp_build(bld, id, **kw):
 
 def configure(conf):
     conf.load('ecpp_common')
+
+# Replace default waf build command with our own version
+# We dont want to use different variants in subdirs. Instead we want to use variants
+# to identify the current target
+class EcppBuildContext(object):
+    def get_variant_dir(self):
+        return self.out_dir
+
+    variant_dir = property(get_variant_dir, None)
+
+class EcppBuild(EcppBuildContext, Build.BuildContext):
+    pass
+
+class EcppInstall(EcppBuildContext, Build.InstallContext):
+    pass
+
+class EcppUninstall(EcppBuildContext, Build.UninstallContext):
+    pass
+
+class EcppClean(EcppBuildContext, Build.CleanContext):
+    pass
