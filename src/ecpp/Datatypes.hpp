@@ -34,6 +34,23 @@
 
 #include <stdint.h>
 
+/* undefine standard c macros if set */
+#ifdef Max
+#undef Max
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef Min
+#undef Min
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace ecpp {
 
   template<typename T>
