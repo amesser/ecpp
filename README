@@ -21,6 +21,7 @@ was used. Currently the following targets are supported:
 
 - ARM
   - Hilscher netX50 (Very Very Preliminary)
+  - Atmel ATSAM4S
 
 .. _`waf meta build system`: http://code.google.com/p/waf/
 
