@@ -63,7 +63,7 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
 
     if create:
       conf.setenv(envname, conf.env)
-      
+
       for x in 'ASFLAGS CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mmcu=%s' % device.lower()])
 
@@ -71,16 +71,12 @@ def ecpp_setupbuild_arch_avr8(conf,board,device,platform,arch):
         conf.env.append_value(x, ['-Os', '-funsigned-bitfields', '-fshort-enums', '-fomit-frame-pointer'])
 
       conf.env.append_value('LINKFLAGS', ['--static', '-Wl,--gc-sections'])
-      
+
       n = conf.root.find_dir(os.path.join(conf.env['ECPP_DIR'],'src'))
       conf.env.append_value('INCLUDES', n.abspath())
 
       conf.env['DEVICE'] = device
 
-      # Mark this env to build a ecpp library for
-      # each target independently
-      
-      conf.env['ECPP_BUILDLIB_TARGET'] = True
       conf.env.append_value('ECPP_FEATURES',['avr-firmware'])
     else:
         conf.setenv(envname)

@@ -31,7 +31,7 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-from waflib.Configure import conf  
+from waflib.Configure import conf
 from waflib import Build
 from waflib import Utils
 import os.path
@@ -49,7 +49,7 @@ def ecpp_getgcclibpath(conf):
     bld(features='cprogram', source='blub.c', target='dummy')
     bld.compile()
 
-@conf  
+@conf
 def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch = None):
     kw = zip('board device platform arch'.split(),(board,device,platform,arch))
 
@@ -82,15 +82,15 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
     conf.setenv(envname,conf.env)
     conf.env['ECPP_ENVNAME'] = envname
 
-    # override build flag
-    if conf.env['ECPP_BUILDLIB_TARGET']:
-        conf.env['ECPP_BUILDLIB'] =  True
+    # build ecpp library for this environment
+    conf.env['ECPP_BUILDLIB'] =  True
 
-        ecpp_libname = 'ecpp_build_%s' % id.lower()
-        conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
-        conf.env.append_value('ECPP_USE',     [ecpp_libname])
-    else:
-        conf.env['ECPP_BUILDLIB'] =  False
+    ecpp_libname = 'ecpp_build_%s' % id.lower()
+    conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
+    conf.env.append_value('ECPP_USE',     [ecpp_libname])
+
+    # new libc needs ecpp library for support code!
+    conf.env['STLIB_c']   = ['c', ecpp_libname]
 
 @conf
 def ecpp_selectbuild(bld, id):
@@ -106,7 +106,7 @@ def ecpp_build(bld, **kw):
     else:
         env = bld.env.derive()
 
-    features = Utils.to_list(kw.get('features',[]))[:] 
+    features = Utils.to_list(kw.get('features',[]))[:]
     features.append('ecpp')
     features.extend(env['ECPP_FEATURES'])
 

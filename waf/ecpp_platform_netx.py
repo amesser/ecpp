@@ -59,7 +59,7 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
       device, ldscript = netx_boards[board], 'board_hilscher_%s.ld' % board
     else:
       ldscript = 'device_hilscher_%s.ld' % device
-    
+
     cpu = netx_cpu[device]
 
     envname = 'device_%s' % device
@@ -69,7 +69,7 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
 
     if envname not in conf.all_envs:
       conf.setenv(envname, conf.env)
-      
+
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x, ['-mthumb-interwork','-mcpu=%s' % cpu])
 
@@ -89,14 +89,11 @@ def ecpp_setupbuild_platform_netx(conf, device, board, platform, arch):
       conf.env['DEVICE'] = device
 
       # Mark this env to build a ecpp library for
-      conf.env['ECPP_BUILDLIB'] = True
-      conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
-
       # new libc needs ecpp library for support code!
       conf.env['STLIB_c']   = ['c', 'ecpp_%s' % conf.env['DEVICE'].lower()]
       # lib gcc needs memcpy from libc
       conf.env['STLIB_gcc'] = ['gcc', 'c']
-      
+
       conf.env.append_value('ECPP_FEATURES',['netx-firmware'])
     else:
       conf.setenv(envname)
@@ -129,9 +126,9 @@ class netx_bootimage(object):
 
         fields = [getattr(self,x,0) for x in self.__slots__[0:-1]]
         # compute boot block checksum
-        fields[-1] = (sum(fields[0:-1]) * -1) 
+        fields[-1] = (sum(fields[0:-1]) * -1)
         fields = [x & 0xFFFFFFFF for x in fields]
-        
+
         bootblock = struct.pack("<16L", *fields)
 
         return bootblock + self.binary
@@ -166,8 +163,8 @@ class netx_bootimage(object):
       for k,v in kw.items():
         setattr(self,k,v)
 
-    # some default timing values for typical sdram 
-    # device 
+    # some default timing values for typical sdram
+    # device
     SDRAM = {
         "control0" : 0x030D0001,
         "control1" : 0x03C23251,
@@ -200,14 +197,14 @@ class netx_rom(Task):
 
         bld = self.generator.bld
         env = {"LANG" : "C"}
-        
-        symbols = bld.cmd_and_log([self.env['NM'], elfnode.abspath()], 
+
+        symbols = bld.cmd_and_log([self.env['NM'], elfnode.abspath()],
           env=env,  output=STDOUT, quiet=BOTH)
 
         symbols = [line.split(None,2) for line in symbols.splitlines()]
         symbols = dict((x[2],int(x[0],16)) for x in symbols if len(x) == 3)
 
-        sections = bld.cmd_and_log([self.env['OBJDUMP'], "-w", "-h", elfnode.abspath()], 
+        sections = bld.cmd_and_log([self.env['OBJDUMP'], "-w", "-h", elfnode.abspath()],
           env=env, output=STDOUT, quiet=BOTH)
 
         sections = sections.splitlines()
@@ -216,7 +213,7 @@ class netx_rom(Task):
             l = sections.pop(0)
             if l.lower().startswith("idx"):
                 break
-          
+
         lma = None
 
         for line in sections:
@@ -230,7 +227,7 @@ class netx_rom(Task):
         bootimg = netx_bootimage()
         bootimg.setBootSource(bootimg.SPIFLASH)
         bootimg.setBootDestination(bootimg.SDRAM)
-        bootimg.setApplication(binnode.read('rb'), 
+        bootimg.setApplication(binnode.read('rb'),
           lma,symbols["_start"])
 
         fwnode.write(bootimg.encode(),'wb')
@@ -242,10 +239,10 @@ def generate_netx_firmware(self):
   if 'cprogram' in self.features or 'cxxprogram' in self.features:
       elf_node      = self.link_task.outputs[0]
       elf_node_copy = elf_node.change_ext("-cpy.elf")
-      
+
       self.create_task('copy',elf_node,elf_node_copy)
       self.strip_task = self.create_task('strip',elf_node_copy,None)
-    
+
       tsk = self.create_task('binary', [elf_node_copy], [elf_node_copy.change_ext('.bin')])
       tsk.set_run_after(self.strip_task)
 

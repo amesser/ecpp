@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 # encoding: utf-8
 #
-# STM32 microcontroller build support
+# Nordic NRF52 microcontroller build support
 #
-# Copyright 2014-2016 Andreas Messer <andi@bastelmap.de>
+# Copyright 2019 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
 #
@@ -37,20 +37,20 @@ from waflib.Configure import conf
 from waflib import Utils
 import os.path
 
-atsam_vars = {
-  'atsam4s8b' : {
-     'CFLAGS'    : ['-mcpu=cortex-m4', '-mthumb'],
-     'CXXFLAGS'  : ['-mcpu=cortex-m4', '-mthumb'],
+nrf52_vars = {
+  'nrf52810' : {
+     'CFLAGS'    : ['-mcpu=cortex-m4', '-mthumb', '-mfloat-abi=soft'],
+     'CXXFLAGS'  : ['-mcpu=cortex-m4', '-mthumb', '-mfloat-abi=soft'],
      'LINKFLAGS' : ['-mcpu=cortex-m4', '-mthumb'],
-     'DEFINES'   : ['SAM4S8B=1', '__SAM4S8B__=1', 'BOARD=USER_BOARD'],
   },
 }
 
 @conf
-def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
-    global atsam_vars
+def ecpp_setupbuild_platform_nrf52(conf, device, board, platform, arch):
+    global nrf52_vars
 
-    vars     = atsam_vars[device]
+    ldscript = 'device_%s.ld' % device
+    vars     = nrf52_vars[device]
 
     envname = 'device_%s' % device
 
@@ -73,67 +73,15 @@ def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
 
       conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
-      for x in 'ram flash'.split():
-          ldscript = 'device_%s_%s.ld' % (device,x)
-          ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript ))
+      ldscript = conf.root.find_node(os.path.join(conf.env['ECPP_DIR'],'linkerscripts',ldscript))
 
-          if ldscript:
-              conf.env['LINKERSCRIPT_%s' % x] = ldscript.abspath()
-          else:
-              conf.env['LINKERSCRIPT_%s' % x] = u'Error: Please define a linkerscript in wscript'
+      if ldscript:
+        conf.env['LINKERSCRIPT_ecpp'] = ldscript.abspath()
 
       conf.env['DEVICE'] = device
 
-      # new libc needs ecpp library for support code!
-      conf.env['STLIB_c']   = ['c', 'gcc', 'ecpp_%s' % conf.env['DEVICE'].lower()]
-      conf.env['STLIB_gcc'] = []
+      conf.env['STLIB_gcc'] = ['gcc', 'c']
 
       conf.env.append_value('ECPP_FEATURES',['firmware-hex'])
     else:
       conf.setenv(envname)
-
-atmel_atsam_spl_vars = {
-  'atsam4s8' : {
-     'DEFINES' : '',
-  }
-}
-
-atmel_atsam_spl_startup = {
-  'atsam4s8' : 'startup_atsam4s8.s',
-}
-
-@conf
-def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
-    env = bld.all_envs[id]
-
-    vars     = atmel_atsam_spl_vars[env['DEVICE']]
-    startup  = atmel_atsam_spl_startup[env['DEVICE']]
-
-    base_path = bld.path.find_dir(path)
-
-    if not base_path:
-        bld.fatal("Path '%s' not found" % path)
-
-    source = Utils.to_list(kw.get('source',[]))[:]
-    source.extend(base_path.ant_glob(['*.c']))
-    source.append(base_path.find_node(startup))
-
-    includes = Utils.to_list(kw.get('includes',[]))[:]
-    includes.extend([path])
-
-    export_defines = Utils.to_list(vars['DEFINES'])
-
-    defines = Utils.to_list(kw.get('defines',[]))[:]
-    defines.extend(export_defines)
-
-    features = Utils.to_list(kw.get('features',[]))[:]
-    features.extend(Utils.to_list('c cstlib cxx cxxstlib'))
-
-    kw['source']          = source
-    kw['includes']        = includes
-    kw['defines']         = defines
-    kw['export_includes'] = [path]
-    kw['export_defines']  = export_defines
-    kw['features']        = features
-
-    bld.ecpp_build(id = id, **kw)

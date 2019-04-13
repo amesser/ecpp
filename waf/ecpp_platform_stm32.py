@@ -44,20 +44,6 @@ stm32_vars = {
      'LINKFLAGS' : ['-mcpu=cortex-m4', '-mthumb'],
   },
 }
-
-@feature('stm32-firmware')
-@after_method('apply_link')
-def ecpp_generate_stm32_firmware(self):
-  if 'cprogram' in self.features or 'cxxprogram' in self.features:
-      elf_node      = self.link_task.outputs[0]
-      elf_node_copy = elf_node.change_ext("-cpy.elf")
-      
-      self.create_task('copy',elf_node,elf_node_copy)
-      self.strip_task = self.create_task('strip',elf_node_copy,None)
-    
-      tsk = self.create_task('ihex', [elf_node_copy], [elf_node.change_ext('.hex')])
-      tsk.set_run_after(self.strip_task)
-
 @conf
 def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
     global stm32_vars
@@ -74,12 +60,12 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
 
     if create:
       conf.setenv(envname, conf.env)
-      
+
       conf.env['ECPP_ENVNAME'] = envname
 
       for k,v in vars.items():
         conf.env.append_value(k, Utils.to_list(v))
-        
+
       for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x + "_release", ['-Os'])
         conf.env.append_value(x + "_debug",   ['-O0'])
@@ -98,13 +84,10 @@ def ecpp_setupbuild_platform_stm32(conf, device, board, platform, arch):
       conf.env['STLIB_gcc'] = ['gcc', 'c']
 
       # Mark this env to build a ecpp library for
-      conf.env['ECPP_BUILDLIB'] = True
-      conf.env.append_value('ECPP_LIBNAME', 'ecpp_%s' % conf.env['DEVICE'].lower()) 
-
-      conf.env.append_value('ECPP_FEATURES',['stm32-firmware'])
+      conf.env.append_value('ECPP_FEATURES',['firmware-hex'])
     else:
       conf.setenv(envname)
-      
+
 st_stm32_spl_vars = {
   'stm32f405' : {
      'DEFINES' : 'STM32F405xx USE_HAL_DRIVER',
@@ -118,24 +101,24 @@ st_stm32_spl_startup = {
 @conf
 def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
     env = bld.all_envs[id]
-    
+
     vars     = st_stm32_spl_vars[env['DEVICE']]
     startup  = st_stm32_spl_startup[env['DEVICE']]
 
     base_path = bld.path.find_dir(path)
-    
+
     if not base_path:
         bld.fatal("Path '%s' not found" % path)
 
     source = Utils.to_list(kw.get('source',[]))[:]
     source.extend(base_path.ant_glob(['*.c']))
     source.append(base_path.find_node(startup))
-    
+
     includes = Utils.to_list(kw.get('includes',[]))[:]
     includes.extend([path])
 
     export_defines = Utils.to_list(vars['DEFINES'])
-    
+
     defines = Utils.to_list(kw.get('defines',[]))[:]
     defines.extend(export_defines)
 
@@ -148,5 +131,5 @@ def ecpp_3rdpartybuild_st_spl(bld, id, path, **kw):
     kw['export_includes'] = [path]
     kw['export_defines']  = export_defines
     kw['features']        = features
-    
+
     bld.ecpp_build(id = id, **kw)

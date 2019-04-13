@@ -31,7 +31,7 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-from waflib.Configure import conf 
+from waflib.Configure import conf
 from waflib.TaskGen import feature,after_method, before_method
 from waflib import Task
 from waflib.Tools import c
@@ -76,14 +76,14 @@ class copy(Task.Task):
     def run(self):
         for i,o in zip(self.inputs,self.outputs):
             shutil.copyfile(i.abspath(), o.abspath())
-        
+
 @feature('listings')
 @after_method('apply_link')
 def generate_listings(self):
     for t in getattr(self, 'compiled_tasks', []):
         input  = t.inputs[0]
         output = t.outputs[0]
-        
+
         self.create_task('compilelisting', input, output.parent.find_or_declare(output.name + '.lst'),)
 
 
@@ -95,18 +95,36 @@ def ecpp_generate_map(self):
         t.set_outputs(t.outputs[0].change_ext('.map'))
         t.env.append_value('LINKFLAGS', '-Wl,-Map,%s' % t.outputs[-1].abspath())
 
+@feature('ecpp')
+@before_method('propagate_uselib_vars')
+def ecpp_set_default_optimization(self):
+    if 'debug' not in self.features and 'release' not in self.features:
+        self.features.append('release')
+
 
 @feature('ecpp')
 @after_method('apply_link', 'propagate_uselib_vars')
 def ecpp_linkerscript(self):
     from waflib.Tools.ccroot import USELIB_VARS
-    
+
     if 'cprogram' in self.features or 'cxxprogram' in self.features:
         t = self.link_task
+
+        # get list of declared linkerscripts
+        linkerscripts = t.env['LINKERSCRIPTS'] or []
+
+        # this is a top level linkerscript, add it
         linkerscript = t.env.get_flat('LINKERSCRIPT').strip()
 
         if linkerscript:
-            t.env.append_value('LINKFLAGS', ['-T%s' % linkerscript])
+            linkerscripts.append(linkerscript)
+
+        if linkerscripts:
+            t.env.append_value('LINKFLAGS', ['-T%s' % s for s in linkerscripts])
+
+            for x in linkerscripts:
+                n = self.bld.root.find_resource(x)
+                t.dep_nodes.append(n)
 
 @feature('ecpp')
 @after_method('process_source')
@@ -120,6 +138,17 @@ def ecpp_updatecompiledtask(self):
 
         if not t.env['ECPP_ENVNAME']:
             self.bld.fatal('ECPP Environment name for "%s" not set' % node.name)
-        
+
         out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
         t.outputs[0] = node.parent.find_or_declare(out)
+
+@feature('firmware-hex')
+@after_method('apply_link')
+def ecpp_generate_firmware_hex(self):
+  if 'cprogram' in self.features or 'cxxprogram' in self.features:
+      elf_node_orig  = self.link_task.outputs[0]
+      elf_node       = elf_node_orig.change_ext(".stripped.elf")
+
+      self.strip_task = self.create_task('strip',elf_node_orig, elf_node)
+
+      tsk = self.create_task('ihex', [elf_node], [elf_node_orig.change_ext('.hex')])
