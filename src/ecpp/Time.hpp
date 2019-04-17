@@ -204,7 +204,7 @@ namespace ecpp
 
     static constexpr uint_fast8_t limitYear(uint_fast16_t Year)
     {
-      return max(min(Year, YearStart + 99), YearStart) - YearStart;
+      return max(min(Year, YearStart + 99U), (uint_fast16_t)YearStart) - YearStart;
     }
   public:
     FixedCenturyDate() {};
