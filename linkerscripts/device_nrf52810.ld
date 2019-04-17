@@ -111,6 +111,7 @@ SECTIONS
     .softdevice_ram _nrf_softdevice_ram_start (NOLOAD) :
     {
         . = . + _nrf_softdevice_ram_min_size;
+        KEEP( *(.ramsd .ramsd.*));
         __softdevice_ram_end = .;
     } > SRAM
 
