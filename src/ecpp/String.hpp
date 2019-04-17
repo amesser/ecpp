@@ -15,6 +15,7 @@ namespace ecpp
   class String
   {
   public:
+    static bool convertToHex(char *hex, uint8_t length, uint16_t value);
     static bool convertToDecimal(char *decimal, uint8_t length, uint16_t value);
 
     static void
