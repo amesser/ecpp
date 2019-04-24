@@ -304,6 +304,7 @@ namespace ecpp
     typedef TimeType_ TimeType;
 
     constexpr TimeType getTime() const {return *this;}
+    constexpr DateType getDate() const {return *this;}
 
     void set(const TimeType& value) {TimeType::set(value);}
     void set(const DateType& value) {DateType::set(value);}
