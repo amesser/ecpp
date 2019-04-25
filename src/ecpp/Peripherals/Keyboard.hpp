@@ -48,10 +48,7 @@ namespace ecpp
     template<typename TIMER>
     void    poll(const KeyStateType & KeyState, TIMER & Timer);
 
-    KeyStateType getKeyState() const
-    {
-      return m_Pressed;
-    }
+    constexpr KeyStateType getKeyState() const { return m_Pressed; }
   };
 
   template<typename KEYSTATE>
