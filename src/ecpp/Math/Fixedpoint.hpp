@@ -182,6 +182,12 @@ namespace ecpp {
         return m_value <= rescale(rhs,1);
       }
 
+    constexpr TYPE get_raw() const {return m_value;}
+
+    constexpr TYPE set_raw(TYPE & value) {return (m_value = value);}
+
+    constexpr TYPE set_raw(TYPE   value) {return (m_value = value);}
+
     template<typename FRIEND_TYPE, unsigned long FRIEND_SCALE>
     friend class FixedPoint;
 
