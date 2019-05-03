@@ -87,6 +87,13 @@ namespace ecpp {
   };
 
   template<>
+  class TypeProperties<int16_t>
+  {
+    public:
+      static constexpr int16_t Max = 0x7FFF;
+  };
+
+  template<>
   class TypeProperties<uint32_t>
   {
     public:

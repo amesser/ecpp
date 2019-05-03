@@ -9,6 +9,7 @@
 #define ECPP_STRING_HPP_
 
 #include <ecpp/Datatypes.hpp>
+#include <cstring>
 
 namespace ecpp
 {
@@ -75,9 +76,9 @@ namespace ecpp
     }
 
     static void
-    formatSigned(char *buffer, uint8_t digits, int16_t value, char fill =' ', char sign = '\x00')
+    formatSigned(char *buffer, int_fast8_t digits, int16_t value, char fill =' ', char sign = '\x00')
     {
-      uint_fast8_t i;
+      int_fast8_t i;
       bool overflow;
 
       if(value >= 0)
@@ -95,33 +96,23 @@ namespace ecpp
         overflow = overflow | (buffer[0] != '0');
       }
 
-      for(i = 0; i < digits; ++i)
+      if (overflow)
       {
-        if (overflow)
+        memset(buffer, '#', digits);
+      }
+      else if (buffer[0] == '0' && (digits > 1))
+      {
+        for(i = 1; i < (digits-1); ++i)
         {
-          buffer[i] = '#';
-        }
-        else if ((i+1) >= digits)
-        { /* last digit in string */
-          break;
-        }
-        else
-        {
-          if(buffer[i+1] != '0')
-          { /* next digit is first non-zero digit */
-            buffer[i] = sign;
+          buffer[i-1] = fill;
+
+          if(buffer[i] != '0')
             break;
-          }
-          else
-          { /* next digit is zero */
-            buffer[i] = fill;
-          }
         }
+        buffer[i-1] = sign;
       }
     }
   };
-
-
 };
 
 
