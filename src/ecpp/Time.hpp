@@ -142,34 +142,90 @@ namespace ecpp
     uint_least8_t Second;
   };
 
-  class Time
+  class TimeBase
+  {
+
+  };
+
+  class DefaultTime : public TimeBase
   {
   protected:
     uint_least8_t Hour;
     uint_least8_t Minute;
     uint_least8_t Second;
-
   public:
-    Time() {};
-    constexpr Time(uint_fast8_t Hour, uint_fast8_t Minute, uint_fast8_t Second)
+    constexpr DefaultTime() : Hour(0), Minute(0), Second(0) {};
+
+    constexpr DefaultTime(uint_fast8_t Hour, uint_fast8_t Minute, uint_fast8_t Second)
       : Hour(Hour), Minute(Minute), Second(Second) {};
 
-    uint_fast8_t getSecond() const {return Second;}
-    uint_fast8_t getMinute() const {return Minute;}
-    uint_fast8_t getHour()   const {return Hour;}
+    template<typename T>
+    constexpr DefaultTime(const T & init) : Hour(init.getHour()), Minute(init.getMinute()), Second(init.getSecond()) {};
+
+    constexpr uint_fast8_t getSecond() const {return Second;}
+    constexpr uint_fast8_t getMinute() const {return Minute;}
+    constexpr uint_fast8_t getHour()   const {return Hour;}
 
     bool add(TimeDelta rhs);
     bool sub(TimeDelta rhs);
 
     void setSecond(uint_fast8_t value) {Second = value;}
-    void set(const Time &value)
+
+    void set(const DefaultTime &value)
     {
       Hour   = value.Hour;
       Minute = value.Minute;
       Second = value.Second;
     }
 
+    template<typename RHS>
+    constexpr bool operator==(const RHS & rhs)
+    {
+      return (rhs.getHour() == getHour()) and (rhs.getMinute() == getMinute()) and (rhs.getSecond() == getSecond());
+    }
+
+    template<typename RHS>
+    bool operator>=(const RHS & rhs) const;
+
+    template<typename RHS>
+    bool operator<(const RHS & rhs) const;
   };
+
+  template<typename RHS>
+  bool DefaultTime::operator>=(const RHS & rhs) const
+  {
+    if (getHour() > rhs.getHour())
+      return true;
+
+    if (getHour() < rhs.getHour())
+      return false;
+
+    if (getMinute() > rhs.getMinute())
+      return true;
+
+    if (getMinute() < rhs.getMinute())
+      return false;
+
+    return getSecond() >= rhs.getSecond();
+  }
+
+  template<typename RHS>
+  bool DefaultTime::operator<(const RHS & rhs) const
+  {
+    if (getHour() < rhs.getHour())
+      return true;
+
+    if (getHour() > rhs.getHour())
+      return false;
+
+    if (getMinute() < rhs.getMinute())
+      return true;
+
+    if (getMinute() > rhs.getMinute())
+      return false;
+
+    return getSecond() < rhs.getSecond();
+  }
 
 
 
@@ -185,13 +241,43 @@ namespace ecpp
     uint_least8_t  Days;
   };
 
-  template<int CENTURY>
-  class FixedCenturyDate
+  class DateBase
+  {
+
+  };
+
+  class DefaultDate : public DateBase
   {
   protected:
+    uint_least16_t Year;
+    uint_least8_t  Month;
+    uint_least8_t  Day;
+  public:
+    constexpr DefaultDate() : Year(0), Month(0), Day(0) {}
+
+    template<typename T>
+    constexpr DefaultDate(const T & init) : Year(init.getYear()), Month(init.getMonth()), Day(init.getDay()) {}
+
+    constexpr uint_fast16_t getYear()  const {return Year;}
+    constexpr uint_fast8_t  getMonth() const {return Month;}
+    constexpr uint_fast8_t  getDay()   const {return Day;}
+
+    template<typename RHS>
+    constexpr bool operator==(const RHS & rhs)
+    {
+      return (rhs.getYear() == getYear()) and (rhs.getMonth() == getMonth()) and (rhs.getDay() == getDay());
+    }
+
+  };
+
+  template<int CENTURY>
+  class FixedCenturyDate : public DateBase
+  {
+  public:
     static constexpr uint_least8_t  Century   = CENTURY;
     static constexpr uint_least16_t YearStart = CENTURY * 100;
 
+  protected:
      /* Highest Bit of the year variable indicates a leap year */
     uint_least8_t Year;
     uint_least8_t Month;
@@ -208,12 +294,13 @@ namespace ecpp
     }
   public:
     FixedCenturyDate() {};
+
     constexpr FixedCenturyDate(uint_fast16_t Year, uint_fast8_t Month, uint_fast8_t Day)
       : Year(calcYear(limitYear(Year))), Month(Month), Day(Day) {};
 
-    uint_fast16_t getYear()  const {return YearStart + (Year & 0x7F);}
-    uint_fast8_t  getMonth() const {return Month;}
-    uint_fast8_t  getDay()   const {return Day;}
+    constexpr uint_fast16_t getYear()  const {return YearStart + (Year & 0x7F);}
+    constexpr uint_fast8_t  getMonth() const {return Month;}
+    constexpr uint_fast8_t  getDay()   const {return Day;}
 
     uint_fast8_t  getDaysInMonth() const {return calcDaysPerMonth(getMonth(), isLeapYear());}
 
@@ -297,25 +384,50 @@ namespace ecpp
   }
 
   template<typename DateType_, typename TimeType_>
-  class DateTime : public DateType_, public TimeType_
+  class DateTime
   {
   public:
     typedef DateType_ DateType;
     typedef TimeType_ TimeType;
 
-    constexpr TimeType getTime() const {return *this;}
-    constexpr DateType getDate() const {return *this;}
+    constexpr DateTime() : date(), time() {}
 
-    void set(const TimeType& value) {TimeType::set(value);}
-    void set(const DateType& value) {DateType::set(value);}
+    template<typename INIT>
+    constexpr DateTime(const INIT & init) : date(init.getDate()), time(init.getTime()) {}
+
+    constexpr const TimeType & getTime() const {return time;}
+    constexpr const DateType & getDate() const {return date;}
+
+    constexpr uint_fast16_t getYear()  const { return date.getYear();}
+    constexpr uint_fast8_t  getMonth() const { return date.getMonth();}
+    constexpr uint_fast8_t  getDay()   const { return date.getDay();}
+
+    constexpr uint_fast8_t getSecond() const { return time.getSecond();}
+    constexpr uint_fast8_t getMinute() const { return time.getMinute();}
+    constexpr uint_fast8_t getHour()   const { return time.getHour();}
+
+
+    void set(const TimeType& value) { time.set(value);}
+    void set(const DateType& value) { date.set(value);}
 
     void add(TimeDelta rhs)
     {
-      if (TimeType::add(rhs))
-      {
-        DateType::add({0,0,1});
-      }
+      if (time.add(rhs))
+        date.add({0,0,1});
     }
+
+    template<typename ...ARGS>
+    static DateType makeDate(ARGS... args) {return DateType(args...);}
+
+    template<typename ...ARGS>
+    static TimeType makeTime(ARGS... args) {return TimeType(args...);}
+
+    template<typename RHS>
+    constexpr bool operator== (const RHS & rhs) {return date == rhs.getDate() and time == rhs.getTime(); }
+
+  private:
+    DateType date;
+    TimeType time;
   };
 
   template<typename TimeType>

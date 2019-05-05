@@ -118,7 +118,7 @@ namespace ecpp
     return l;
   }
 
-  bool Time::add(TimeDelta rhs)
+  bool DefaultTime::add(TimeDelta rhs)
   {
     uint_fast8_t tmp;
 
@@ -160,7 +160,7 @@ namespace ecpp
     return tmp != 0;
   }
 
-  bool Time::sub(TimeDelta rhs)
+  bool DefaultTime::sub(TimeDelta rhs)
   {
     uint_fast8_t tmp;
 
