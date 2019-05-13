@@ -230,6 +230,22 @@ namespace ecpp {
     return UnsignedIntTypeEstimator<COUNT>::Value;
   };
 
+  template<typename TYPE, typename BUFFER_BASE_TYPE = unsigned int>
+  class MemoryBuffer
+  {
+  public:
+    /** number of elements of BUFFER_BASE_TYPE to yoield size of TYPE */
+    typedef UnsignedIntTypeEstimator<(sizeof(TYPE) + sizeof(BUFFER_BASE_TYPE) - 1) / sizeof(BUFFER_BASE_TYPE)> ElementNumType;
+
+    typedef BUFFER_BASE_TYPE BufferBaseType;
+
+    typedef BufferBaseType   BufferType[ElementNumType::Value];
+
+    constexpr MemoryBuffer() {};
+
+    BufferType               buf = {};
+  };
+
   template<typename T, int ELEMENTS = 1> class EEVariable;
   template<typename T, int ELEMENTS = 1> class FlashVariable;
 
