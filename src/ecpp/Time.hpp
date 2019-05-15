@@ -189,6 +189,13 @@ namespace ecpp
 
     template<typename RHS>
     bool operator<(const RHS & rhs) const;
+
+    DefaultTime operator + (const TimeDelta & rhs) const
+    {
+      DefaultTime ret(*this);
+      ret.add(rhs);
+      return ret;
+    }
   };
 
   template<typename RHS>
@@ -268,7 +275,51 @@ namespace ecpp
       return (rhs.getYear() == getYear()) and (rhs.getMonth() == getMonth()) and (rhs.getDay() == getDay());
     }
 
+    template<typename RHS>
+    bool operator>(const RHS & rhs) const;
+
+    template<typename RHS>
+    bool operator>=(const RHS & rhs) const;
+
+    DefaultDate operator + (const DateDelta & rhs) const;
   };
+
+  template<typename RHS>
+  bool DefaultDate::operator>(const RHS & rhs) const
+  {
+    if (getYear() > rhs.getYear())
+      return true;
+
+    if (getYear() < rhs.getYear())
+      return false;
+
+    if (getMonth() > rhs.getMonth())
+      return true;
+
+    if (getMonth() < rhs.getMonth())
+      return false;
+
+    return getDay() > rhs.getDay();
+  }
+
+  template<typename RHS>
+  bool DefaultDate::operator>=(const RHS & rhs) const
+  {
+    if (getYear() > rhs.getYear())
+      return true;
+
+    if (getYear() < rhs.getYear())
+      return false;
+
+    if (getMonth() > rhs.getMonth())
+      return true;
+
+    if (getMonth() < rhs.getMonth())
+      return false;
+
+    return getDay() >= rhs.getDay();
+  }
+
 
   template<int CENTURY>
   class FixedCenturyDate : public DateBase

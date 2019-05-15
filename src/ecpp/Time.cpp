@@ -12,6 +12,8 @@
 
 namespace ecpp
 {
+
+
   bool isLeapYear(uint_fast8_t Century, uint_fast8_t Year)
   {
     bool leap;
@@ -28,6 +30,11 @@ namespace ecpp
     return leap;
   }
 
+  bool isLeapYear(uint_fast16_t Year)
+  {
+    return isLeapYear(Year / 100, Year % 100);
+  }
+
   uint_fast8_t calcDaysPerMonth(uint_fast8_t Month, bool isLeapYear)
   {
     uint8_t days;
@@ -35,13 +42,9 @@ namespace ecpp
     if (Month == 1)
     {
       if (isLeapYear)
-      {
         days = 29;
-      }
       else
-      {
         days = 28;
-      }
     }
     else if (Month < 7)
     {
@@ -53,6 +56,46 @@ namespace ecpp
     }
 
     return days;
+  }
+
+
+  DefaultDate
+  DefaultDate::operator + (const DateDelta & rhs) const
+  {
+    DefaultDate ret(*this);
+    bool is_leap;
+    uint_least8_t days;
+
+    days = rhs.Days;
+    is_leap = isLeapYear(ret.Year);
+    do
+    {
+      const auto days_per_month = calcDaysPerMonth(ret.Month, is_leap);
+
+      if ((days + ret.Day) >= days_per_month)
+      {
+        ret.Month += 1;
+        days -= days_per_month;
+
+        if (ret.Month >= 12)
+        {
+          ret.Month -= 12;
+          ret.Year  += 1;
+          is_leap = isLeapYear(ret.Year);
+        }
+      }
+      else
+      {
+        ret.Day += days;
+        days = 0;
+      }
+    } while(days);
+
+    ret.Month += rhs.Months % 12;
+    ret.Year  += rhs.Months / 12;
+    ret.Year  += rhs.Years;
+
+    return ret;
   }
 
   void WeekTime::incSecond(uint8_t inc)
