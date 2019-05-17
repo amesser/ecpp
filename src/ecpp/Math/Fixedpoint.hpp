@@ -51,12 +51,17 @@ namespace ecpp {
       TYPE m_value;
 
       template<typename VALUE>
-      static constexpr TYPE rescale(const VALUE & value, const unsigned long & scale)
+      static constexpr TYPE rescale(const VALUE & value, const unsigned long & scale = 1)
       {
         return static_cast<TYPE>( (SCALE >= scale) ?
             (value * static_cast<TYPE>(SCALE / scale)) : (value / (scale / SCALE)));
       }
 
+      template<typename RHS_TYPE, int RHS_SCALE>
+      static constexpr TYPE rescale (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs)
+      {
+        return rescale(rhs.m_value, RHS_SCALE);
+      }
     public:
       constexpr FixedPoint() {};
 
@@ -74,14 +79,7 @@ namespace ecpp {
       template<typename RHS>
       FixedPoint & operator = (const RHS & rhs)
       {
-        m_value = rescale(rhs, 1);
-        return *this;
-      }
-
-      template<typename RHS_TYPE, int RHS_SCALE>
-      FixedPoint & operator = (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs)
-      {
-        m_value = rescale(rhs.m_value, RHS_SCALE);
+        m_value = rescale(rhs);
         return *this;
       }
 
@@ -112,25 +110,27 @@ namespace ecpp {
       template<typename RHS>
       constexpr FixedPoint operator + (const RHS & rhs) const
       {
-        return { m_value + rescale(rhs, 1), SCALE};
+        return { m_value + rescale(rhs), SCALE};
       }
 
-      template<typename RHS_TYPE, unsigned long RHS_SCALE>
-      constexpr FixedPoint operator + (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+      template<typename RHS>
+      const FixedPoint & operator += (const RHS & rhs)
       {
-        return {m_value + rescale(rhs.m_value, RHS_SCALE),SCALE};
+        m_value += rescale(rhs);
+        return *this;
       }
 
       template<typename RHS>
       constexpr FixedPoint operator - (const RHS & rhs) const
       {
-        return { m_value - rescale(rhs, 1), SCALE};
+        return { m_value - rescale(rhs), SCALE};
       }
 
-      template<typename RHS_TYPE, unsigned long RHS_SCALE>
-      constexpr FixedPoint operator - (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+      template<typename RHS>
+      const FixedPoint & operator -= (const RHS & rhs)
       {
-        return { m_value - rescale(rhs.m_value, RHS_SCALE), SCALE};
+        m_value -= rescale(rhs);
+        return *this;
       }
 
       constexpr FixedPoint operator - () const
@@ -141,7 +141,7 @@ namespace ecpp {
       FixedPoint operator -- (int)
       {
         TYPE bck = m_value;
-        m_value -= rescale(1,1);
+        m_value -= rescale(1);
 
         return { bck, SCALE};
       }
@@ -154,13 +154,20 @@ namespace ecpp {
       template<typename RHS>
       constexpr bool operator > (const RHS & rhs) const
       {
-        return m_value > rescale(rhs,1);
+        return m_value > rescale(rhs);
+      }
+
+      template<typename RHS_TYPE, unsigned long RHS_SCALE>
+      constexpr bool operator > (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+      {
+        return (static_cast<t_DoubleWidth>(m_value) * RHS_SCALE) > \
+            (static_cast<typename FixedPoint<RHS_TYPE, RHS_SCALE>::t_DoubleWidth>(rhs.m_value) * SCALE);
       }
 
       template<typename RHS>
       constexpr bool operator >= (const RHS & rhs) const
       {
-        return m_value >= rescale(rhs,1);
+        return m_value >= rescale(rhs);
       }
 
       template<typename RHS_TYPE, unsigned long RHS_SCALE>
@@ -173,13 +180,28 @@ namespace ecpp {
       template<typename RHS>
       constexpr bool operator < (const RHS & rhs) const
       {
-        return m_value < rescale(rhs,1);
+        return m_value < rescale(rhs);
       }
+
+      template<typename RHS_TYPE, unsigned long RHS_SCALE>
+      constexpr bool operator < (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+      {
+        return (static_cast<t_DoubleWidth>(m_value) * RHS_SCALE) < \
+            (static_cast<typename FixedPoint<RHS_TYPE, RHS_SCALE>::t_DoubleWidth>(rhs.m_value) * SCALE);
+      }
+
 
       template<typename RHS>
       constexpr bool operator <= (const RHS & rhs) const
       {
-        return m_value <= rescale(rhs,1);
+        return m_value <= rescale(rhs);
+      }
+
+      template<typename RHS_TYPE, unsigned long RHS_SCALE>
+      constexpr bool operator <= (const FixedPoint<RHS_TYPE, RHS_SCALE> & rhs) const
+      {
+        return (static_cast<t_DoubleWidth>(m_value) * RHS_SCALE) <= \
+            (static_cast<typename FixedPoint<RHS_TYPE, RHS_SCALE>::t_DoubleWidth>(rhs.m_value) * SCALE);
       }
 
     constexpr TYPE get_raw() const {return m_value;}
