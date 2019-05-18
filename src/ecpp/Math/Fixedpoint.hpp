@@ -63,7 +63,7 @@ namespace ecpp {
         return rescale(rhs.m_value, RHS_SCALE);
       }
     public:
-      constexpr FixedPoint() {};
+      constexpr FixedPoint() : m_value(0) {};
 
       constexpr FixedPoint(const FixedPoint<TYPE,SCALE> &init) :
         m_value( init.m_value) {};
