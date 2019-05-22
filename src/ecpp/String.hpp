@@ -57,6 +57,24 @@ namespace ecpp
     static void
     formatFrac(char *buffer, uint8_t digits, uint8_t prec)
     {
+      uint8_t i;
+
+      for (i = digits; (i > 1); --i)
+      {
+        if (i < (digits - prec - 1))
+          break;
+
+        if (buffer[i-1] == '-')
+        {
+          buffer[i-2] = '-';
+          buffer[i-1] = '0';
+        }
+        else if (buffer[i-1] == ' ')
+        {
+          buffer[i-1] = '0';
+        }
+      }
+
       while(digits >= 2)
       {
         digits = digits - 1;
@@ -71,7 +89,6 @@ namespace ecpp
           buffer[digits] = '.';
           break;
         }
-
       }
     }
 
