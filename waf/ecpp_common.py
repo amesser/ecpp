@@ -40,7 +40,7 @@ import shutil
 class strip(Task.Task):
     color   = 'GREEN'
 
-    run_str_strip = '${STRIP} -g ${TGT}'
+    run_str_strip = '${STRIP} -g ${STRIP_FLAGS} ${TGT}'
 
     (run_strip, strip_vars) = Task.compile_fun(run_str_strip)
 
