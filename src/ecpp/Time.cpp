@@ -64,35 +64,49 @@ namespace ecpp
   {
     DefaultDate ret(*this);
     bool is_leap;
-    uint_least8_t days;
+    uint_fast16_t tmp;
 
-    days = rhs.Days;
+    /* add days field including overflows */
+    tmp = rhs.Days;
     is_leap = isLeapYear(ret.Year);
     do
     {
       const auto days_per_month = calcDaysPerMonth(ret.Month, is_leap);
 
-      if ((days + ret.Day) >= days_per_month)
-      {
+      if ((tmp + ret.Day) >= days_per_month)
+      { /* add would overflow month */
+        tmp      -= days_per_month - ret.Day;
+
         ret.Month += 1;
-        days -= days_per_month;
+        ret.Day    = 0;
 
         if (ret.Month >= 12)
         {
-          ret.Month -= 12;
           ret.Year  += 1;
+          ret.Month -= 12;
+
           is_leap = isLeapYear(ret.Year);
         }
       }
       else
-      {
-        ret.Day += days;
-        days = 0;
+      { /* no overflow */
+        ret.Day += tmp;
+        tmp = 0;
       }
-    } while(days);
+    } while(tmp);
 
-    ret.Month += rhs.Months % 12;
+    /* Add month field including overflows */
     ret.Year  += rhs.Months / 12;
+    ret.Month += rhs.Months % 12;
+
+    if (ret.Month >= 12)
+    { /* month overflow during add,
+       */
+      ret.Month -= 12;
+      ret.Year  += 1;
+    }
+
+    /* finally years */
     ret.Year  += rhs.Years;
 
     return ret;
