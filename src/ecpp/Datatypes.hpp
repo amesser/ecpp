@@ -1,5 +1,5 @@
 /*
- *  Copyright 2015 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2015-2019 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -221,9 +221,6 @@ namespace ecpp {
   constexpr typename UnsignedIntTypeEstimator<sizeof(TYPE)>::Type SizeOf(const TYPE& type) {
     return UnsignedIntTypeEstimator<sizeof(TYPE)>::Value;
   };
-
-  template<typename TYPE>
-  constexpr void ElementCount(const TYPE (& type));
 
   template<typename TYPE, unsigned long COUNT>
   constexpr typename UnsignedIntTypeEstimator<COUNT>::Type ElementCount(const TYPE (&)[COUNT]) {
