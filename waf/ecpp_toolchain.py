@@ -3,7 +3,7 @@
 #
 # Generic gcc toolchain suppport
 #
-# Copyright 2013 Andreas Messer <andi@bastelmap.de>
+# Copyright 2013-2019 Andreas Messer <andi@bastelmap.de>
 #
 # This file is part of the Embedded C++ Platform Project.
 #
@@ -33,7 +33,7 @@
 # do not wish to do so, delete this exception statement from your
 # version.
 
-from waflib.Configure import conf, find_program as find_program_orig 
+from waflib.Configure import conf, find_program as find_program_orig
 from waflib.Tools.ccroot import USELIB_VARS
 
 USELIB_VARS['ecpp'] = set(['LINKERSCRIPT'])
@@ -44,15 +44,15 @@ tool_prefixes = {
   'native'  : [''],
 }
 
-@conf 
+@conf
 def find_program(self,filename,**kw):
     prefix = self.env['TOOL_PREFIX'] or ''
-    
+
     if not isinstance(filename,list):
         filename = [filename]
-        
-    return find_program_orig(self,list(prefix + x for x in filename),**kw)     
-    
+
+    return find_program_orig(self,list(prefix + x for x in filename),**kw)
+
 def options(opt):
     opt.load('gcc')
     opt.load('gxx')
@@ -67,12 +67,12 @@ def ecpp_setuptoolchain(conf, arch):
 
     if envname not in conf.all_envs:
       conf.setenv(envname, conf.env)
-      
+
       for prefix in tool_prefixes[arch]:
         try:
           conf.env.stash()
           conf.env['TOOL_PREFIX'] = prefix
-          
+
           conf.load('gcc')
           conf.load('gxx')
           conf.load('gas')
@@ -83,8 +83,8 @@ def ecpp_setuptoolchain(conf, arch):
           conf.find_program(['nm'],      var='NM')
 
           conf.env.append_value('ASFLAGS',   ['-g'])
-          conf.env.append_value('CFLAGS',    ['-g', '-Wall'])
-          conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000'])
+          conf.env.append_value('CFLAGS',    ['-g', '-Wall', '-fsigned-char'])
+          conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000', '-fsigned-char'])
         except conf.errors.ConfigurationError:
           conf.env.revert()
         else:
