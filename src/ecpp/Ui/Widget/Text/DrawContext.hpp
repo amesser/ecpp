@@ -71,6 +71,8 @@ namespace ecpp {
 
     char & operator[] (IndexType i) {return this->field[i]; }
 
+    operator char *() {return this->field; }
+
     FieldContext subField(IndexType offset, IndexType len) const
     {
       if (offset >= this->size)
@@ -90,6 +92,8 @@ namespace ecpp {
     {
       return subField(offset, this->size);
     }
+
+    constexpr IndexType getSize() const {return size; }
 
   private:
     /** points to memory of the field */
