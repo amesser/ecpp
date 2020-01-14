@@ -29,49 +29,28 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#include "ecpp/Execution/JobQueue.hpp"
-#include "ecpp/Execution/ObjectLocker.hpp"
+#ifndef ECPP_UNITS_TIME_HPP_
+#define ECPP_UNITS_TIME_HPP_
 
-namespace ecpp::Execution {
-  void JobQueue::enqueue(Job* job)
+#include "ecpp/Units/Common.hpp"
+
+namespace ecpp::Units
+{
+  template<typename T = unsigned, signed POWER = 0, unsigned EXP = 10>
+  class FixedScaleTime : public FixedScaleQuantity<T, POWER, EXP>
   {
-    ObjectLocker<JobQueue> locker(*this);
+  public:
+    constexpr FixedScaleTime() : FixedScaleQuantity<T, POWER, EXP>() {}
+    explicit  constexpr FixedScaleTime(const T & t) : FixedScaleQuantity<T, POWER, EXP>(t) {}
+  };
 
-    if(nullptr != job->NextJob)
-      return;
-
-    job->NextJob = job;
-
-    if (nullptr == Tail)
-      Head = job;
-    else
-      Tail->NextJob = job;
-
-    Tail = job;
-  }
-
-  Job* JobQueue::next()
+  template<typename T = unsigned>
+  class Milliseconds : public FixedScaleTime<T, -3>
   {
-    Job *job;
+  public:
+    constexpr Milliseconds(const T & ms) : FixedScaleTime<T, -3>(ms) {}
+  };
 
-    job = Head;
-    if (nullptr != job)
-    {
-      ObjectLocker<JobQueue> locker(*this);
-
-      if(job == Tail)
-      {
-        Head = nullptr;
-        Tail = nullptr;
-      }
-      else
-      {
-        Head = job->NextJob;
-      }
-    }
-
-    job->NextJob = NULL;
-
-    return job;
-  }
 }
+
+#endif

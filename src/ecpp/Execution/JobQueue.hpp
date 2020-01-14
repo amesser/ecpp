@@ -33,11 +33,15 @@
 #define ECPP_EXECUTION_JOBQUEUE_HPP_
 
 #include <cstdint>
+#include "ecpp/Execution/ObjectLocker.hpp"
 
-namespace ecpp::Execution {
+namespace ecpp::Execution
+{
   /* Implementation of a simple function pointer based task queue
     * mechanism. Intended to be used for serialize and asynchronous processing
     * of tasks of limited duration. */
+
+  template<class BASE>
   class JobQueue;
 
   class Job
@@ -53,12 +57,10 @@ namespace ecpp::Execution {
       Handler = handler;
     }
 
-  protected:
     void run()
     {
       if (nullptr == Handler)
         return;
-
 
       Handler(*this);
     }
@@ -67,19 +69,65 @@ namespace ecpp::Execution {
     Job         *NextJob  {nullptr};
     HandlerType  Handler  {nullptr};
 
+    template<class BASE>
     friend class JobQueue;
   };
 
-  class JobQueue
+  template<class BASE>
+  class JobQueue : public BASE
   {
   public:
-    void enqueue(Job* job);
-    Job* next();
+    void enqueue(Job*  job);
+    void enqueue(Job & job) { enqueue(&job); }
 
+    Job* next();
   private:
     Job*    Head;
     Job*    Tail;
   };
+
+  template<class BASE>
+  void JobQueue<BASE>::enqueue(Job* job)
+  {
+    ObjectLocker<JobQueue> locker(*this);
+
+    if(nullptr != job->NextJob)
+      return;
+
+    job->NextJob = job;
+
+    if (nullptr == Tail)
+      Head = job;
+    else
+      Tail->NextJob = job;
+
+    Tail = job;
+  }
+
+  template<class BASE>
+  Job* JobQueue<BASE>::next()
+  {
+    Job *job = Head;
+
+    if (nullptr == job)
+      return nullptr;
+
+    ObjectLocker<JobQueue > locker(*this);
+
+    if(job == Tail)
+    {
+      Head = nullptr;
+      Tail = nullptr;
+    }
+    else
+    {
+      Head = job->NextJob;
+    }
+
+    job->NextJob = nullptr;
+
+    return job;
+  }
 }
 
 

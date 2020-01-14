@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,46 +29,32 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_META_MATH_HPP_
-#define ECPP_META_MATH_HPP_
+#ifndef ECPP_META_CONDITIONAL_HPP_
+#define ECPP_META_CONDITIONAL_HPP_
 
-namespace ecpp
+namespace ecpp::Meta
 {
-  /** Meta Programming implementation of logarithm
-   *  Defines a recursive template to compute a logarithm at compile time */
-  template<unsigned long BASE, unsigned long VAL>
-  class MetaLog
+  template<bool VALUE, typename TYPE_TRUE, typename TYPE_FALSE>
+  class MetaIfSelector {};
+
+  template<typename TYPE_TRUE, typename TYPE_FALSE>
+  class MetaIfSelector<true, TYPE_TRUE, TYPE_FALSE>
   {
   public:
-    static constexpr unsigned int  Result  = 1 + MetaLog<BASE, VAL/BASE>::Result;
-    static constexpr bool          Remain  = (VAL%BASE != 0) || MetaLog<BASE, VAL/BASE>::Remain;
+    typedef TYPE_TRUE ResultType;
   };
 
-  template<unsigned long BASE>
-  class MetaLog<BASE, 1>
+  template<typename TYPE_TRUE, typename TYPE_FALSE>
+  class MetaIfSelector<false, TYPE_TRUE, TYPE_FALSE>
   {
   public:
-    static constexpr unsigned int Result = 0;
-    static constexpr bool         Remain = false;
+    typedef TYPE_FALSE ResultType;
   };
 
-  /** Meta programming implementation of logarithm */
-  template<unsigned int BASE, unsigned short POWER>
-  class MetaExp
-  {
-  public:
-    static constexpr unsigned long long Result = BASE * MetaExp<BASE, POWER-1>::Result;
-  };
-
-  template<unsigned int BASE>
-  class MetaExp<BASE, 0>
-  {
-  public:
-    static constexpr unsigned long long Result = 1;
-  };
-
-}
+  template<bool VALUE, typename TYPE_TRUE, typename TYPE_FALSE>
+  using MetaIf = typename MetaIfSelector<VALUE, TYPE_TRUE, TYPE_FALSE>::ResultType;
 
 
+};
 
-#endif /* ECPP_META_MATH_HPP_ */
+#endif

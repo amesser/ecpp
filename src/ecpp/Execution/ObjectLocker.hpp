@@ -32,24 +32,23 @@
 #ifndef ECPP_EXECUTION_OBJECTLOCKER_HPP_
 #define ECPP_EXECUTION_OBJECTLOCKER_HPP_
 
-#include "System.hpp"
-
-namespace ecpp::Execution {
+namespace ecpp::Execution
+{
   template<typename OBJ>
   class ObjectLocker
   {
   public:
     ObjectLocker(OBJ & obj) : Obj (obj)
     {
-      ::System::lock(obj);
+      Obj.lock();
     }
 
     ~ObjectLocker()
     {
-      ::System::unlock(obj);
+      Obj.unlock();
     }
   private:
-    OBJ & const Obj;
+    OBJ & Obj;
   };
 }
 
