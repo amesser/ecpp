@@ -71,7 +71,7 @@ namespace ecpp {
 
     char & operator[] (IndexType i) {return this->field[i]; }
 
-    operator char *() {return this->field; }
+    explicit operator char *() {return this->field; }
 
     FieldContext subField(IndexType offset, IndexType len) const
     {
