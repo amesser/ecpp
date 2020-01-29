@@ -61,6 +61,12 @@ namespace ecpp::Units {
       return Delta > static_cast< typename ::std::make_signed< typename Milliseconds<T>::ValueType>::type>((rhs.Value + (1000 / FREQ) - 1) / (1000 / FREQ));
     }
 
+    template<typename T>
+    constexpr bool operator >= (const Milliseconds<T> & rhs) const
+    {
+      return Delta >= static_cast< typename ::std::make_signed< typename Milliseconds<T>::ValueType>::type>((rhs.Value + (1000 / FREQ) - 1) / (1000 / FREQ));
+    }
+
 
   private:
     ValueType Delta {0};
