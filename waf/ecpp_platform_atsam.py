@@ -71,6 +71,13 @@ def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
         conf.env.append_value(x + "_release", ['-Os'])
         conf.env.append_value(x + "_debug",   ['-O0'])
 
+      # On embedded systems global statics are never destroyed in almost any case. However, C++ generates
+      # corresponding destructor calls by default. Since we're not using default libs, cxa_atexit might
+      # be unavailable.
+      #
+      # Lets avoid at least a linker "__dso_handle undefined" error by using standard atexit mechanism
+      conf.env.append_value('CXXFLAGS', ['-fno-use-cxa-atexit'])
+
       conf.env.append_value('LINKFLAGS', ['-nodefaultlibs', '--static', '-Wl,--gc-sections'])
 
       for x in 'ram flash'.split():
