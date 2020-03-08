@@ -35,6 +35,8 @@
 
 def build(bld):
     source_common = [
+      'ecpp/Abi/Elf.cpp',
+      'ecpp/Abi/SimpleBinFormat.cpp',
       'ecpp/String.cpp',
       'ecpp/Time.cpp',
     ]
