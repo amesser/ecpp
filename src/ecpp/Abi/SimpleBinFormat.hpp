@@ -42,19 +42,20 @@ namespace ecpp::Abi
   /** A simple dynamic loader for binary code.
    *
    * Can be used to implement dynamic loading and execution of code from any source
-   * in ram memory. */
+   * in ram memory.
+   *
+   * For use, derive your own class from this one and define function pointer members.
+   * */
   class SimpleBinaryFormat
   {
   public:
-    constexpr SimpleBinaryFormat(void (*main)()) : SelfPointer(this), main(main) {};
+    constexpr SimpleBinaryFormat() : SelfPointer(this) {};
 
     struct SimpleBinaryFormat    * const SelfPointer;
 
     const Elf32_Rel              * const RelocsStartPtr = &__rel_start__;
 
     const Elf32_Rel              * const RelocsEndPtr   = &__rel_end__;
-
-    void                        (*main)();
 
     bool relocate();
   };

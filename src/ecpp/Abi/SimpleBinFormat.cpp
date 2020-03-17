@@ -74,11 +74,7 @@ SimpleBinaryFormat::relocate()
   }
 
   if(rel < rel_end)
-  {
-    /* invalidate entry function on error */
-    main = nullptr;
     return false;
-  }
 
   return true;
 }
