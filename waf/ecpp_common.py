@@ -142,13 +142,30 @@ def ecpp_updatecompiledtask(self):
         out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
         t.outputs[0] = node.parent.find_or_declare(out)
 
-@feature('firmware-hex')
+
+@feature('firmware-hex', 'firmware-binary')
 @after_method('apply_link')
-def ecpp_generate_firmware_hex(self):
+def ecpp_generate_stripped_elf(self):
   if 'cprogram' in self.features or 'cxxprogram' in self.features:
       elf_node_orig  = self.link_task.outputs[0]
       elf_node       = elf_node_orig.change_ext(".stripped.elf")
 
       self.strip_task = self.create_task('strip',elf_node_orig, elf_node)
 
+@feature('firmware-hex')
+@after_method('ecpp_generate_stripped_elf')
+def ecpp_generate_firmware_hex(self):
+  if 'cprogram' in self.features or 'cxxprogram' in self.features:
+      elf_node_orig  = self.strip_task.inputs[0]
+      elf_node       = self.strip_task.outputs[0]
+
       tsk = self.create_task('ihex', [elf_node], [elf_node_orig.change_ext('.hex')])
+
+@feature('firmware-binary')
+@after_method('ecpp_generate_stripped_elf')
+def ecpp_generate_firmware_binary(self):
+  if 'cprogram' in self.features or 'cxxprogram' in self.features:
+      elf_node_orig  = self.strip_task.inputs[0]
+      elf_node       = self.strip_task.outputs[0]
+
+      tsk = self.create_task('binary', [elf_node], [elf_node_orig.change_ext('.bin')])
