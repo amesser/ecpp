@@ -43,7 +43,7 @@ namespace ecpp::Units
   {
   public:
     template<typename OutType, typename InType>
-    static OutType rescale(InType value)
+    static constexpr OutType rescale(InType value)
     {
       return (value + Scale / 2) / Scale;
     };
@@ -54,7 +54,7 @@ namespace ecpp::Units
   {
   public:
     template<typename OutType, typename InType>
-    static OutType rescale(InType value)
+    static constexpr OutType rescale(InType value)
     {
       return (value * Scale);
     };
