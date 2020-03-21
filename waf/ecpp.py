@@ -33,6 +33,7 @@
 
 from waflib.Configure import conf
 from waflib import Build
+from waflib import Context
 from waflib import Utils
 import os.path
 
@@ -120,6 +121,14 @@ def ecpp_build(bld, **kw):
     kw['use']      = use
 
     bld(env=env,**kw)
+
+@conf
+def ecpp_load_package(self, package, **kw):
+    path = os.path.dirname(__file__) + os.sep + 'ecpp_packages'
+
+    module = Context.load_tool(package, path, with_sys_path=True)
+    fun = getattr(module, self.fun, None)
+    fun(self, **kw)
 
 def configure(conf):
     conf.load('ecpp_common')
