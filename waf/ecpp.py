@@ -126,7 +126,7 @@ def ecpp_build(bld, **kw):
 def ecpp_load_package(self, package, **kw):
     path = os.path.dirname(__file__) + os.sep + 'ecpp_packages'
 
-    module = Context.load_tool(package, path, with_sys_path=True)
+    module = Context.load_tool(package, [path], with_sys_path=True)
     fun = getattr(module, self.fun, None)
     fun(self, **kw)
 
