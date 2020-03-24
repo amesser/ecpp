@@ -95,6 +95,8 @@ namespace ecpp {
 
     constexpr IndexType getSize() const {return size; }
 
+    constexpr char * getBuffer() { return this->field;}
+
   private:
     /** points to memory of the field */
     char* const     field;
