@@ -33,6 +33,7 @@
 #define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
 
 #include "ecpp/String.hpp"
+#include "ecpp/Units/Fraction.hpp"
 
 namespace ecpp {
 
@@ -46,6 +47,7 @@ namespace ecpp {
     constexpr FieldContext(char* field, IndexType size) : field(field), size(size) {}
 
     void clear();
+    void fill(char c);
 
     void putText(const char* text);
     void putText(const char* text, IndexType len);
@@ -68,6 +70,9 @@ namespace ecpp {
 
     template<size_t ARRSIZE>
     void centerTrimmedText(const char   (& text)[ARRSIZE]) {centerTrimmedText(text, ARRSIZE);}
+
+    template<typename T>
+    void putProgress(const ::ecpp::Units::Fraction<T> fraction);
 
     char & operator[] (IndexType i) {return this->field[i]; }
 
@@ -107,7 +112,13 @@ namespace ecpp {
   template<typename INDEXTYPE>
   void FieldContext<INDEXTYPE>::clear()
   {
-    memset(this->field, ' ', this->size);
+    fill(' ');
+  }
+
+  template<typename INDEXTYPE>
+  void FieldContext<INDEXTYPE>::fill(char c)
+  {
+    memset(this->field, c, this->size);
   }
 
   template<typename INDEXTYPE>
@@ -177,6 +188,22 @@ namespace ecpp {
     start = String::getLTrimLen(text, len);
     centerText(text+start, String::getRTrimStringLen(text+start, len-start));
   }
+
+  template<typename INDEXTYPE>
+  template<typename T>
+  void FieldContext<INDEXTYPE>::putProgress(const ::ecpp::Units::Fraction<T> fraction)
+  {
+    if (0 == fraction.Denominator)
+    {
+      fill('-');
+    }
+    else
+    {
+      INDEXTYPE n = (size * fraction.Nominator / fraction.Denominator);
+      memset(field, '#', n);
+    }
+  }
+
 
   class DrawContext
   {
