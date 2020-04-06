@@ -10,7 +10,7 @@
 
 #include <ecpp/Datatypes.hpp>
 
-namespace ecpp
+namespace ecpp::Math::Statistics
 {
   template<typename SUMTYPE, typename CNTTYPE, unsigned long MAXCNT = TypeProperties<CNTTYPE>::Max>
   class Averager
@@ -57,6 +57,31 @@ namespace ecpp
         return 0;
       }
     }
+  };
+
+  template<typename T, unsigned long SAMPLES>
+  class PT1
+  {
+  public:
+    constexpr PT1() {}
+    constexpr PT1(T init) : Acc {init} {}
+
+    void init(T init = 0)
+    {
+      Acc = init * SAMPLES;
+    }
+
+    void sample(T value)
+    {
+      Acc = Acc + value - Acc / SAMPLES;
+    }
+
+    constexpr T getValue() const
+    {
+      return (Acc + SAMPLES / 2) / SAMPLES;
+    }
+  private:
+    T Acc {0};
   };
 };
 
