@@ -42,6 +42,19 @@ namespace ecpp::Units
   public:
     constexpr FixedScaleTime() : FixedScaleQuantity<T, POWER, EXP>() {}
     explicit  constexpr FixedScaleTime(const T & t) : FixedScaleQuantity<T, POWER, EXP>(t) {}
+
+    template<typename T_RHS>
+    FixedScaleTime & operator= (const FixedScaleTime<T_RHS, POWER, EXP> & rhs)
+    {
+      FixedScaleQuantity<T, POWER, EXP>::operator=(rhs);
+      return *this;
+    }
+
+    template<typename T_RHS>
+    constexpr bool operator> (const FixedScaleTime<T_RHS, POWER, EXP> & rhs) const
+    {
+      return this->Value > rhs.Value;
+    }
   };
 
   template<typename T = unsigned>
@@ -49,6 +62,15 @@ namespace ecpp::Units
   {
   public:
     constexpr Milliseconds(const T & ms) : FixedScaleTime<T, -3>(ms) {}
+
+    template<typename T_RHS>
+    Milliseconds & operator= (const FixedScaleTime<T_RHS, -3> & rhs)
+    {
+      FixedScaleTime<T, -3>::operator=(rhs);
+      return *this;
+    }
+
+    using FixedScaleTime<T, -3>::operator> ;
   };
 
 }

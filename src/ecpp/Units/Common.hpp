@@ -104,6 +104,15 @@ namespace ecpp::Units
 
     constexpr FixedScaleQuantity() {}
 
+    template<typename T_RHS>
+    constexpr FixedScaleQuantity(const FixedScaleQuantity<T_RHS, POWER, 10> & init) : Value {init.Value} {}
+
+    template<typename T_RHS>
+    FixedScaleQuantity & operator = (const FixedScaleQuantity<T_RHS, POWER, 10> &rhs)
+    {
+      Value = rhs.Value;
+      return *this;
+    }
 
   protected:
     constexpr FixedScaleQuantity(const ValueType &init) : Value(init) {}
