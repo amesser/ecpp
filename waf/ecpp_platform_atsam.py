@@ -92,7 +92,7 @@ def ecpp_setupbuild_platform_atsam(conf, device, board, platform, arch):
       conf.env['DEVICE'] = device
 
       # new libc needs ecpp library for support code!
-      conf.env['STLIB_c']   = ['c', 'gcc', 'ecpp_%s' % conf.env['DEVICE'].lower()]
+      conf.env['STLIB_c']   = ['c', 'gcc']
       conf.env['STLIB_gcc'] = []
 
       conf.env.append_value('ECPP_FEATURES',['firmware-hex'])

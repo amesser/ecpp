@@ -91,7 +91,7 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
     conf.env.append_value('ECPP_USE',     [ecpp_libname])
 
     # new libc needs ecpp library for support code!
-    #conf.env['STLIB_c']   = ['c', ecpp_libname]
+    conf.env.append_value('STLIB_c', ecpp_libname)
 
 @conf
 def ecpp_selectbuild(bld, id):
