@@ -35,8 +35,9 @@
 #include <stdint.h>
 
 
+#ifdef __cplusplus
 extern "C" {
-
+#endif
 
 volatile uint8_t dummy = 1;
 
@@ -73,4 +74,35 @@ void* _sbrk(void)
   return 0;
 }
 
+int _write(void)
+{
+  return -1;
+}
+
+void _close(void)
+{
+}
+
+void _fstat(void)
+{
+
+}
+
+void _isatty(void)
+{
+
+}
+
+void _lseek(void)
+{
+
+}
+
+int _read(void)
+{
+  return -1;
+}
+
+#ifdef __cplusplus
 };
+#endif
