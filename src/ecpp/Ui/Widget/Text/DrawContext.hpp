@@ -32,6 +32,9 @@
 #ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
 #define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
 
+#include <stdio.h>
+#include <cstdarg>
+
 #include "ecpp/String.hpp"
 #include "ecpp/Units/Fraction.hpp"
 
@@ -102,6 +105,7 @@ namespace ecpp {
 
     constexpr char * getBuffer() { return this->field;}
 
+    void iprintf(const char* format, ...);
   private:
     /** points to memory of the field */
     char* const     field;
@@ -204,6 +208,14 @@ namespace ecpp {
     }
   }
 
+  template<typename INDEXTYPE>
+  void FieldContext<INDEXTYPE>::iprintf(const char* format, ...)
+  {
+    ::std::va_list args;
+    va_start(args, format);
+    vsniprintf(field, size, format, args);
+    va_end(args);
+  }
 
   class DrawContext
   {
