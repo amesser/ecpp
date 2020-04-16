@@ -73,7 +73,7 @@ namespace ecpp::Math::Statistics
 
     void sample(T value)
     {
-      Acc = Acc + value - Acc / SAMPLES;
+      Acc = Acc + value - getValue();
     }
 
     constexpr T getValue() const
