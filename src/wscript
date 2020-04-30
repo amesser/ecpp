@@ -39,6 +39,7 @@ def build(bld):
       'ecpp/Abi/SimpleBinFormat.cpp',
       'ecpp/String.cpp',
       'ecpp/Time.cpp',
+      'ecpp/Ui/Text/Painter.cpp',
     ]
 
     sourcefiles = {
@@ -52,6 +53,12 @@ def build(bld):
         ],
     }
 
+    sourcefiles_device = {
+        'atsam4s8b' : [
+            'ecpp/Target/ATSAM/ATSAM4S_EEFC.cpp',
+        ],
+    }
+
     for id,env in bld.all_envs.items():
         if env['ECPP_BUILDLIB']:
 
@@ -62,14 +69,14 @@ def build(bld):
 
           source_target = sourcefiles.get(prefix, sourcefiles['default'])
 
+          source_device = sourcefiles_device.get(env.DEVICE, [])
+
           bld.ecpp_build(
               id       = id,
               target   = env.get_flat('ECPP_LIBNAME'),
-              source   = source_target + source_common,
+              source   = source_target + source_device + source_common,
               includes = ['.'],
               export_includes = [bld.path],
-              cflags   = ['-ffunction-sections', '-fdata-sections'],
-              cxxflags = ['-ffunction-sections', '-fdata-sections'],
               features = 'cxx cxxstlib'
           )
 

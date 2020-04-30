@@ -66,6 +66,8 @@ namespace ecpp::Execution
 
     void  stop();
 
+    constexpr bool isRunning() const { return m_NextTimer != this; }
+
     constexpr bool operator > (const Timer & timer) const
     {
       return (m_TimeoutTicks > timer.m_TimeoutTicks);
@@ -80,7 +82,7 @@ namespace ecpp::Execution
 
   private:
     TicksType   m_TimeoutTicks  {};
-    Timer*      m_NextTimer     {nullptr};
+    Timer*      m_NextTimer     {this};
     Job*        m_pJob          {nullptr};
 
     void  cont(TickDeltaType timeout, Job &job);
@@ -140,6 +142,10 @@ namespace ecpp::Execution
     TimerType** p = &m_NextTimer;
     TimerType* pIt;
 
+    /* sanity check */
+    if(timer.m_NextTimer != &timer)
+      return;
+
     while(0 != (pIt = *p))
     {
       if (timer < *pIt)
@@ -163,6 +169,7 @@ namespace ecpp::Execution
       if(pIt == &timer)
       {
         *p = pIt->m_NextTimer;
+        pIt->m_NextTimer = pIt;
         break;
       }
 

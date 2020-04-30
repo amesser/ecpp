@@ -47,7 +47,7 @@ def ecpp_setupbuild_platform_native(conf, device, board, platform, arch):
     conf.setenv(envname, conf.env)
 
     if create:
-      for x in 'CFLAGS CXXFLAGS'.split():
+      for x in 'CFLAGS CXXFLAGS LINKFLAGS'.split():
         conf.env.append_value(x,   ['-mtune=native'])
         conf.env.append_value(x + "_debug",   ['-O0', '-g'])
         conf.env.append_value(x + "_release", ['-O2', '-g'])

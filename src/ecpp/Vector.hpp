@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,60 +29,28 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-#define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
+#ifndef ECPP_VECTOR_HPP_
+#define ECPP_VECTOR_HPP_
 
-
-#include "ecpp/String.hpp"
-#include "ecpp/Units/Fraction.hpp"
-#include "ecpp/Ui/Text/Painter.hpp"
-
-#include "ecpp/Ui/Text/Painter.hpp"
-
-namespace ecpp {
-  using ::ecpp::Ui::Text::TextPainter;
-
-  /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+namespace ecpp
+{
+  template<typename LISTITEM, typename INDEXTYPE>
+  class StaticVector
   {
   public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    typedef LISTITEM  value_type;
+    typedef INDEXTYPE size_type;
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
+    template<long N>
+    constexpr StaticVector(const LISTITEM (& items)[N]) : Items {items}, NumItems{N} {}
 
-    char & operator[] (IndexType i) {return this->Buffer[i]; }
+    constexpr const LISTITEM & operator [] (INDEXTYPE i) const { return Items[i];}
+    constexpr const LISTITEM & at (INDEXTYPE i) const { return Items[i];}
 
-    explicit operator char *() {return this->Buffer; }
-
-    FieldContext subField(IndexType offset, IndexType len) const
-    {
-      if (offset >= this->Cols)
-      {
-        offset = 0;
-        len    = 0;
-      }
-      else if ((offset + len) >= this->Cols)
-      {
-        len = this->Cols - offset;
-      }
-
-      return FieldContext(this->Buffer + offset, len);
-    }
-
-    FieldContext subField(IndexType offset) const
-    {
-      return subField(offset, this->Cols);
-    }
-
-    constexpr IndexType getSize() const {return this->Cols; }
-    constexpr char * getBuffer() { return this->Buffer;}
-
+    constexpr INDEXTYPE size() const { return NumItems; }
+  private:
+    const LISTITEM * const Items;
+    const INDEXTYPE        NumItems;
   };
-
-  class DrawContext
-  {
-
-  };
-};
+}
 #endif

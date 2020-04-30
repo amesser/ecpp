@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,60 +29,27 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-#define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-
-
-#include "ecpp/String.hpp"
-#include "ecpp/Units/Fraction.hpp"
-#include "ecpp/Ui/Text/Painter.hpp"
 
 #include "ecpp/Ui/Text/Painter.hpp"
 
-namespace ecpp {
-  using ::ecpp::Ui::Text::TextPainter;
+using namespace ::ecpp::Ui::Text;
 
-  /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+TextPainterTextWithLen TextPainterTextWithLen::trim(const char *text, size_t len)
+{
+  /* trim end */
+  len = strnlen(text,len);
+  for(; len > 0; --len )
   {
-  public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    if(text[len-1] != ' ')
+      break;
+  }
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
-
-    char & operator[] (IndexType i) {return this->Buffer[i]; }
-
-    explicit operator char *() {return this->Buffer; }
-
-    FieldContext subField(IndexType offset, IndexType len) const
-    {
-      if (offset >= this->Cols)
-      {
-        offset = 0;
-        len    = 0;
-      }
-      else if ((offset + len) >= this->Cols)
-      {
-        len = this->Cols - offset;
-      }
-
-      return FieldContext(this->Buffer + offset, len);
-    }
-
-    FieldContext subField(IndexType offset) const
-    {
-      return subField(offset, this->Cols);
-    }
-
-    constexpr IndexType getSize() const {return this->Cols; }
-    constexpr char * getBuffer() { return this->Buffer;}
-
-  };
-
-  class DrawContext
+  /* trim beginning */
+  for(; len > 0; --len, ++text)
   {
+    if(text[0] != ' ')
+      break;
+  }
 
-  };
-};
-#endif
+  return TextPainterTextWithLen(text, len);
+}

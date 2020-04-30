@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,60 +29,67 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-#define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
+#ifndef ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_
+#define ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_
 
+#include <cstdint>
 
-#include "ecpp/String.hpp"
-#include "ecpp/Units/Fraction.hpp"
-#include "ecpp/Ui/Text/Painter.hpp"
+namespace ecpp::Target::ATSAM4S
+{
+  using ::std::uint32_t;
 
-#include "ecpp/Ui/Text/Painter.hpp"
-
-namespace ecpp {
-  using ::ecpp::Ui::Text::TextPainter;
-
-  /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+  /* Thin HAL for embedded flash controller of ATSAM4S
+   */
+  class EEFC
   {
   public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    static constexpr int PageSize       = 512;
+    static constexpr int PagesPerSector = 8;
+    static constexpr int SectorSize     = PageSize * PagesPerSector;
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
 
-    char & operator[] (IndexType i) {return this->Buffer[i]; }
-
-    explicit operator char *() {return this->Buffer; }
-
-    FieldContext subField(IndexType offset, IndexType len) const
+    static EEFC & getInstance(int channel = 0)
     {
-      if (offset >= this->Cols)
-      {
-        offset = 0;
-        len    = 0;
-      }
-      else if ((offset + len) >= this->Cols)
-      {
-        len = this->Cols - offset;
-      }
-
-      return FieldContext(this->Buffer + offset, len);
+      return *reinterpret_cast<EEFC*>(0x400E0A00);
     }
 
-    FieldContext subField(IndexType offset) const
+    void eraseSectors(unsigned int num_pages, void* start);
+    void writePages  (unsigned int num_pages, void* start, const void* src);
+  private:
+    void waitReady();
+
+    enum : uint32_t
     {
-      return subField(offset, this->Cols);
-    }
+      MSK_FSR_FRDY   = 0x00000001,
+      MSK_FSR_FCMDE  = 0x00000002,
+      MSK_FSR_FLOCKE = 0x00000004,
+      MSK_FSR_FLERR  = 0x00000008,
+    };
 
-    constexpr IndexType getSize() const {return this->Cols; }
-    constexpr char * getBuffer() { return this->Buffer;}
+    enum : uint32_t
+    {
+      VAL_FCR_KEY             = 0x5A000000,
+      MSK_FCR_FARG            = 0x00FFFF00,
+      VAL_FCR_FARG_EPA_4PAGES = 0x00000000,
+      VAL_FCR_FARG_EPA_8PAGES = 0x00000100,
+      MSK_FCR_CMD             = 0x000000FF,
+    };
 
+    enum : uint32_t
+    {
+      VAL_FCMD_WP             = 0x00000001,
+      VAL_FCMD_EPA            = 0x00000007,
+    };
+
+    /** Register structure of EEFC*/
+    struct
+    {
+      volatile uint32_t FMR;
+      volatile uint32_t FCR;
+      volatile uint32_t FSR;
+      volatile uint32_t FRR;
+    } Regs;    
   };
+}
 
-  class DrawContext
-  {
-
-  };
-};
-#endif
+#endif // ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_

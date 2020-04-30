@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,60 +29,27 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-#define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
+#ifndef ECPP_UI_TEXT_ACTIONITEM_HPP_
+#define ECPP_UI_TEXT_ACTIONITEM_HPP_
 
-
-#include "ecpp/String.hpp"
-#include "ecpp/Units/Fraction.hpp"
-#include "ecpp/Ui/Text/Painter.hpp"
-
-#include "ecpp/Ui/Text/Painter.hpp"
-
-namespace ecpp {
-  using ::ecpp::Ui::Text::TextPainter;
-
-  /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+namespace ecpp::Ui::Text
+{
+  /** Class to represent a named action to be used in user interfaces
+   *
+   */
+  template<typename CONTEXT>
+  class ActionItem
   {
   public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    typedef void (*ActionCallbackType)(CONTEXT & ctx);
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
+    constexpr ActionItem(const char* name, ActionCallbackType action) : Name(name), Callback(action) {}
 
-    char & operator[] (IndexType i) {return this->Buffer[i]; }
-
-    explicit operator char *() {return this->Buffer; }
-
-    FieldContext subField(IndexType offset, IndexType len) const
-    {
-      if (offset >= this->Cols)
-      {
-        offset = 0;
-        len    = 0;
-      }
-      else if ((offset + len) >= this->Cols)
-      {
-        len = this->Cols - offset;
-      }
-
-      return FieldContext(this->Buffer + offset, len);
-    }
-
-    FieldContext subField(IndexType offset) const
-    {
-      return subField(offset, this->Cols);
-    }
-
-    constexpr IndexType getSize() const {return this->Cols; }
-    constexpr char * getBuffer() { return this->Buffer;}
-
+    constexpr const char* getText() const {return Name;}
+    void                 doAction(CONTEXT & ctx) const { Callback(ctx); };
+  protected:
+    const  char* const Name;
+    const ActionCallbackType Callback;
   };
-
-  class DrawContext
-  {
-
-  };
-};
+}
 #endif

@@ -77,14 +77,25 @@ def ecpp_setuptoolchain(conf, arch):
           conf.load('gxx')
           conf.load('gas')
 
+
           conf.find_program(['strip'],   var='STRIP')
           conf.find_program(['objcopy'], var='OBJCOPY')
           conf.find_program(['objdump'], var='OBJDUMP')
           conf.find_program(['nm'],      var='NM')
 
+          #enable LTO
+          #var = conf.find_program(['gcc-ar'])
+          #conf.env.AR = var
+          #conf.env.append_value('CFLAGS',    ['-flto'])
+          #conf.env.append_value('CXXFLAGS',  ['-flto'])
+          #conf.env.append_value('LINKFLAGS', ['-flto', '-fuse-linker-plugin'])
+
           conf.env.append_value('ASFLAGS',   ['-g'])
           conf.env.append_value('CFLAGS',    ['-g', '-Wall', '-fsigned-char'])
           conf.env.append_value('CXXFLAGS',  ['-g', '-std=c++11','-Wall', '-ftemplate-depth=10000', '-fsigned-char'])
+          conf.env.append_value('LINKFLAGS', ['-g'])
+
+
         except conf.errors.ConfigurationError:
           conf.env.revert()
         else:

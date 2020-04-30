@@ -282,7 +282,7 @@ namespace ecpp {
   };
 
   template<typename TYPE>
-  constexpr TYPE min(const TYPE & a, const TYPE & b) {
+  constexpr TYPE min(TYPE a, TYPE b) {
     return (a < b) ? a : b;
   };
 

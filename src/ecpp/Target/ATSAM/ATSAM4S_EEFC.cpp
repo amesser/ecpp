@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,60 +29,61 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
-#define ECPP_UI_WIDGET_TEXT_DRAWCONTEXT_H_
+#include "ecpp/Target/ATSAM/ATSAM4S_EEFC.hpp"
 
+using namespace ::ecpp::Target::ATSAM4S;
 
-#include "ecpp/String.hpp"
-#include "ecpp/Units/Fraction.hpp"
-#include "ecpp/Ui/Text/Painter.hpp"
+void
+EEFC::waitReady()
+{
+  while(0 == (Regs.FSR & MSK_FSR_FRDY));
+}
 
-#include "ecpp/Ui/Text/Painter.hpp"
+void
+EEFC::eraseSectors(unsigned int num_pages, void* start)
+{
+  uint32_t addr = (uint32_t)start;
+  uint32_t cmd;
 
-namespace ecpp {
-  using ::ecpp::Ui::Text::TextPainter;
+  cmd  = VAL_FCMD_EPA;
+  cmd |= ((num_pages / PagesPerSector)      << 8) & 0x00000300;
+  cmd |= (((addr - 0x00400000)) / PageSize  << 8) & 0x00FFFC00;
+  cmd |= VAL_FCR_KEY;
 
-  /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+  Regs.FCR = cmd;
+  waitReady();
+}
+
+void
+EEFC::writePages(unsigned int num_pages, void* start, const void* src)
+{
+  const uint32_t *q = static_cast<const uint32_t*>(src);
+  uint32_t *p       = static_cast<uint32_t*>(start);
+
+  while(num_pages > 0)
   {
-  public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    uint32_t addr = reinterpret_cast<uint32_t>(p);
+    uint32_t cmd;
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
+    unsigned int i;
 
-    char & operator[] (IndexType i) {return this->Buffer[i]; }
+    /* Fill  latchbuffer with one page */
+    for(i = 0; i < (PageSize / sizeof(*p)); ++i)
+      p[i] = q[i];
 
-    explicit operator char *() {return this->Buffer; }
+    /* setup command for writing one page */
+    cmd  = VAL_FCMD_WP;
+    cmd |= (((addr - 0x00400000)) / PageSize << 8) & 0x00FFFF00;
+    cmd |= VAL_FCR_KEY;
 
-    FieldContext subField(IndexType offset, IndexType len) const
-    {
-      if (offset >= this->Cols)
-      {
-        offset = 0;
-        len    = 0;
-      }
-      else if ((offset + len) >= this->Cols)
-      {
-        len = this->Cols - offset;
-      }
+    Regs.FCR = cmd;
+    waitReady();
 
-      return FieldContext(this->Buffer + offset, len);
-    }
+    /* one page was written */
+    num_pages -= 1;
 
-    FieldContext subField(IndexType offset) const
-    {
-      return subField(offset, this->Cols);
-    }
-
-    constexpr IndexType getSize() const {return this->Cols; }
-    constexpr char * getBuffer() { return this->Buffer;}
-
-  };
-
-  class DrawContext
-  {
-
-  };
-};
-#endif
+    /* move to next page to write */
+    p+=i;
+    q+=i;
+  }
+}
