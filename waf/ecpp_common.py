@@ -101,7 +101,6 @@ def ecpp_set_default_optimization(self):
     if 'debug' not in self.features and 'release' not in self.features:
         self.features.append('release')
 
-
 @feature('ecpp')
 @after_method('apply_link', 'propagate_uselib_vars')
 def ecpp_linkerscript(self):

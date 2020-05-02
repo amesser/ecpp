@@ -36,7 +36,9 @@
 from waflib.Configure import conf, find_program as find_program_orig
 from waflib.Tools.ccroot import USELIB_VARS
 
-USELIB_VARS['ecpp'] = set(['LINKERSCRIPT'])
+# in context of ecpp, the following vars might be extended by
+# "uselib" or "feature"
+USELIB_VARS['ecpp'] = set(['LINKERSCRIPT', 'CXXFLAGS', 'CFLAGS', 'LINKFLAGS'])
 
 tool_prefixes = {
   'avr8'    : ['avr-'],
