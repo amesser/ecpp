@@ -138,8 +138,20 @@ def ecpp_updatecompiledtask(self):
         if not t.env['ECPP_ENVNAME']:
             self.bld.fatal('ECPP Environment name for "%s" not set' % node.name)
 
-        out = '%s_objects/%s.%d.o' % (t.env['ECPP_ENVNAME'],node.name, self.idx)
-        t.outputs[0] = node.parent.find_or_declare(out)
+        p = node.parent.path_from(self.path)
+        t.outputs[0] = self.path.find_or_declare('_%s/%s/%s.%d.o' % (t.env['ECPP_ENVNAME'], p, node.name, self.idx))
+
+@feature('ecpp')
+@after_method('apply_link')
+def ecpp_updatelinktask(self):
+    ''' mangles the name of generated linker/archiver output '''
+    if set(('cstlib','cxxstlib')) & set(self.features):
+        t   = self.link_task
+
+        if t is not None:
+            link_out_node_orig  = t.outputs[0]
+            link_out = '_%s/%s' % (t.env['ECPP_ENVNAME'], link_out_node_orig.path_from(self.path.get_bld()))
+            t.outputs[0] = self.path.find_or_declare(link_out)
 
 
 @feature('firmware-hex', 'firmware-binary')

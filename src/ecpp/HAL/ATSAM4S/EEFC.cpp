@@ -29,9 +29,9 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#include "ecpp/Target/ATSAM/ATSAM4S_EEFC.hpp"
+#include "ecpp/HAL/ATSAM4S/EEFC.hpp"
 
-using namespace ::ecpp::Target::ATSAM4S;
+using namespace ::ecpp::HAL::ATSAM4S;
 
 void
 EEFC::waitReady()

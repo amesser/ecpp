@@ -32,6 +32,10 @@
 # to your version of ECPP, but you are not obligated to do so.  If you
 # do not wish to do so, delete this exception statement from your
 # version.
+def configure(conf):
+    conf.setenv('')
+    conf.env.append_value('INCLUDES', [conf.path.abspath()])
+    # conf.env.append_value('STLIB_ecpp', 'ecpp')
 
 def build(bld):
     source_common = [
@@ -40,7 +44,7 @@ def build(bld):
       'ecpp/String.cpp',
       'ecpp/Time.cpp',
       'ecpp/Ui/Text/Painter.cpp',
-    ]
+    ] + bld.path.ant_glob('ecpp/Peripherals/**/*.cpp')
 
     sourcefiles = {
         'avr-' : [
@@ -54,16 +58,14 @@ def build(bld):
     }
 
     sourcefiles_device = {
-        'atsam4s8b' : [
-            'ecpp/Target/ATSAM/ATSAM4S_EEFC.cpp',
-        ],
+        'atsam4s8b' : bld.path.ant_glob('ecpp/HAL/ARM/*.cpp') +
+                      bld.path.ant_glob('ecpp/HAL/ATSAM4S/*.cpp'),
     }
 
     for id,env in bld.all_envs.items():
         if env['ECPP_BUILDLIB']:
-
-          if not env.get_flat('ECPP_ENVNAME'):
-              bld.fatal('ECPP_ENVNAME not set for "%s"' % id)
+          if not env.get_flat('ECPP_BUILDID'):
+              bld.fatal('build id not set for "%s"' % id)
 
           prefix = env['TOOL_PREFIX']
 
@@ -71,14 +73,9 @@ def build(bld):
 
           source_device = sourcefiles_device.get(env.DEVICE, [])
 
-          bld.ecpp_build(
+          tg = bld.ecpp_build(
               id       = id,
-              target   = env.get_flat('ECPP_LIBNAME'),
+              target   = 'ecpp',
               source   = source_target + source_device + source_common,
-              includes = ['.'],
-              export_includes = [bld.path],
               features = 'cxx cxxstlib'
           )
-
-
-

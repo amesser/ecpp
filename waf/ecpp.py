@@ -82,16 +82,15 @@ def ecpp_setupbuild(conf, id, board = None, device = None, platform = None, arch
     # build id
     conf.setenv(envname,conf.env)
     conf.env['ECPP_ENVNAME'] = envname
+    conf.env['ECPP_BUILDID'] = id
 
     # build ecpp library for this environment
     conf.env['ECPP_BUILDLIB'] =  True
 
-    ecpp_libname = 'ecpp_build_%s' % id.lower()
-    conf.env.append_value('ECPP_LIBNAME', ecpp_libname)
-    conf.env.append_value('ECPP_USE',     [ecpp_libname])
+    ecpp_libname = '%s/ecpp' % id.lower()
 
     # new libc needs ecpp library for support code!
-    conf.env.append_value('STLIB_c', ecpp_libname)
+    conf.env.append_value('STLIB_c', 'ecpp')
 
 @conf
 def ecpp_selectbuild(bld, id):
@@ -102,25 +101,40 @@ def ecpp_selectbuild(bld, id):
 
 @conf
 def ecpp_build(bld, **kw):
+    # when no name is given to the target, we assume the target
+    # lives entirely in the domain of a build id. To separate
+    # targets from each other we prepend the build id as namespace
+    explicit_names = 'name' in kw
+
     if 'id' in kw:
         env = bld.all_envs[kw['id']].derive()
     else:
         env = bld.env.derive()
+
+    id = env['ECPP_BUILDID']
+
+    if not explicit_names and not id:
+        bld.fatal(u'Must be using build id when not using explicit names when building %r' % (kw.get('name', kw['target'])))
 
     features = Utils.to_list(kw.get('features',[]))[:]
     features.append('ecpp')
     features.extend(env['ECPP_FEATURES'])
 
     use = Utils.to_list(kw.get('use',[]))[:]
-    use.extend(env['ECPP_USE'])
 
-    if kw['target'] in use:
-        use.remove(kw['target'])
+    if not explicit_names:
+        use = list('%s/%s' % (id, x) for x in use)
 
     kw['features'] = features
     kw['use']      = use
 
-    bld(env=env,**kw)
+    tg = bld(env=env,**kw)
+
+    # adjust the name of the task generator
+    if not explicit_names:
+        tg.name = '%s/%s' % (id, kw['target'])
+
+    return tg
 
 @conf
 def ecpp_load_package(self, package, **kw):

@@ -103,6 +103,13 @@ namespace ecpp::Units {
 
     constexpr Power10Tick() : BaseType() {};
 
+    constexpr Power10Tick(const Power10Tick &init) : BaseType(init) {};
+
+    constexpr Power10Tick(const volatile Power10Tick &init) : BaseType(static_cast<const VALUETYPE>(init.Value)) {};
+
+    // constexpr Power10Tick(const Power10Tick & init) : BaseType(init) {};
+
+
     template<typename T, unsigned INPOWER>
     constexpr Power10Tick(const FixedScaleTime<T, INPOWER, 10> & init) : BaseType(init) {}
     //constexpr StaticFreqTick(ValueType init) : Value(init) {};
@@ -111,6 +118,11 @@ namespace ecpp::Units {
     constexpr TickValue(const ::ecpp::Units::Milliseconds init) : Value((init.Value * FREQ + 999) / 1000) {};
     */
     const Power10Tick & operator++ ()
+    {
+      BaseType::Value++; return *this;
+    }
+
+    Power10Tick operator++ () volatile
     {
       BaseType::Value++; return *this;
     }

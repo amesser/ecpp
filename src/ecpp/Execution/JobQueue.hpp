@@ -33,7 +33,7 @@
 #define ECPP_EXECUTION_JOBQUEUE_HPP_
 
 #include <cstdint>
-#include "ecpp/Execution/ObjectLocker.hpp"
+#include "ecpp/Execution/Synchronized.hpp"
 
 namespace ecpp::Execution
 {
@@ -89,7 +89,7 @@ namespace ecpp::Execution
   template<class BASE>
   void JobQueue<BASE>::enqueue(Job* job)
   {
-    ObjectLocker<JobQueue> locker(*this);
+    Synchronized<JobQueue> critical(*this);
 
     if(nullptr != job->NextJob)
       return;
@@ -112,7 +112,7 @@ namespace ecpp::Execution
     if (nullptr == job)
       return nullptr;
 
-    ObjectLocker<JobQueue > locker(*this);
+    Synchronized<JobQueue> critical(*this);
 
     if(job == Tail)
     {

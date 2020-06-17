@@ -29,67 +29,33 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_
-#define ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_
+#ifndef ECPP_EXECUTION_SYNCHRONIZED_HPP_
+#define ECPP_EXECUTION_SYNCHRONIZED_HPP_
 
-#include <cstdint>
+#include <type_traits>
 
-namespace ecpp::Target::ATSAM4S
+namespace ecpp::Execution
 {
-  using ::std::uint32_t;
-
-  /* Thin HAL for embedded flash controller of ATSAM4S
-   */
-  class EEFC
+  template<typename OBJ>
+  class Synchronized
   {
   public:
-    static constexpr int PageSize       = 512;
-    static constexpr int PagesPerSector = 8;
-    static constexpr int SectorSize     = PageSize * PagesPerSector;
+    typedef decltype(OBJ().enter()) StateType;
 
-
-    static EEFC & getInstance(int channel = 0)
+    Synchronized(OBJ & obj) : Obj (obj)
     {
-      return *reinterpret_cast<EEFC*>(0x400E0A00);
+      State = Obj.enter();
     }
 
-    void eraseSectors(unsigned int num_pages, void* start);
-    void writePages  (unsigned int num_pages, void* start, const void* src);
+    ~Synchronized()
+    {
+      Obj.leave(State);
+    }
+
   private:
-    void waitReady();
-
-    enum : uint32_t
-    {
-      MSK_FSR_FRDY   = 0x00000001,
-      MSK_FSR_FCMDE  = 0x00000002,
-      MSK_FSR_FLOCKE = 0x00000004,
-      MSK_FSR_FLERR  = 0x00000008,
-    };
-
-    enum : uint32_t
-    {
-      VAL_FCR_KEY             = 0x5A000000,
-      MSK_FCR_FARG            = 0x00FFFF00,
-      VAL_FCR_FARG_EPA_4PAGES = 0x00000000,
-      VAL_FCR_FARG_EPA_8PAGES = 0x00000100,
-      MSK_FCR_CMD             = 0x000000FF,
-    };
-
-    enum : uint32_t
-    {
-      VAL_FCMD_WP             = 0x00000001,
-      VAL_FCMD_EPA            = 0x00000007,
-    };
-
-    /** Register structure of EEFC*/
-    struct
-    {
-      volatile uint32_t FMR;
-      volatile uint32_t FCR;
-      volatile uint32_t FSR;
-      volatile uint32_t FRR;
-    } Regs;    
+    OBJ &     Obj;
+    StateType State;
   };
 }
 
-#endif // ECPP_TARGET_ATSAM_ATSAM4S_EEFC_HPP_
+#endif

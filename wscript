@@ -46,6 +46,7 @@ def options(opt):
 def configure(conf):
   conf.env.ECPP_DIR = _ecpp_dir
   conf.load('ecpp')
+  conf.recurse(['src'])
 
 def build(bld):
   bld.recurse(['src'])
