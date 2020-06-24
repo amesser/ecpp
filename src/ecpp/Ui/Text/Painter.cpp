@@ -34,22 +34,3 @@
 
 using namespace ::ecpp::Ui::Text;
 
-TextPainterTextWithLen TextPainterTextWithLen::trim(const char *text, size_t len)
-{
-  /* trim end */
-  len = strnlen(text,len);
-  for(; len > 0; --len )
-  {
-    if(text[len-1] != ' ')
-      break;
-  }
-
-  /* trim beginning */
-  for(; len > 0; --len, ++text)
-  {
-    if(text[0] != ' ')
-      break;
-  }
-
-  return TextPainterTextWithLen(text, len);
-}

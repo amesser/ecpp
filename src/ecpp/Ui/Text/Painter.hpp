@@ -47,111 +47,142 @@ namespace ecpp::Ui::Text
   using ::std::memcpy;
   using ::std::int_least8_t;
 
+  template<typename TextPainterBase>
   class TextPainterText
   {
   public:
-    constexpr TextPainterText(const char *text) : Text(text) {}
+    typedef typename TextPainterBase::TextProcessor::TextIterator Iterator;
 
-    constexpr const char* getText() const {return Text;}
+    constexpr TextPainterText(const char *text) : text_(text) {}
 
-  protected:
-    const char* const Text;
-  };
+    constexpr const char* text()    const {return text_;}
+    constexpr const char* getText() const {return text_;}
 
-  class TextPainterTextWithLen : public TextPainterText
-  {
-  public:
-    template<size_t ARRSIZE>
-    constexpr TextPainterTextWithLen(const int8_t (& text)[ARRSIZE]) : TextPainterText(text), Len{ARRSIZE} {}
-
-    template<size_t ARRSIZE>
-    constexpr TextPainterTextWithLen(const char   (& text)[ARRSIZE]) : TextPainterText(text), Len{ARRSIZE} {}
-
-    explicit constexpr TextPainterTextWithLen(const char *text)    : TextPainterText(text), Len{strlen(text)} {}
-    constexpr TextPainterTextWithLen(const char *text, size_t len) : TextPainterText(text), Len{len} {}
-
-    template<size_t ARRSIZE>
-    static TextPainterTextWithLen trim(const int8_t (& text)[ARRSIZE])
+    Iterator CreateIterator() const
     {
-      return trim(text, ARRSIZE);
+      return Iterator(text_, 0xFFFFFFFF);
     }
 
+  protected:
+    const char* const text_;
+  };
+
+  /** Container to contain a text and its associated character count.
+   *  characters != length of the buffer */
+  template<typename TextPainterBase>
+  class TextPainterTextWithLen : public TextPainterText<TextPainterBase>
+  {
+  public:
+    typedef typename TextPainterText<TextPainterBase>::Iterator Iterator;
+
     template<size_t ARRSIZE>
-    static TextPainterTextWithLen trim(const char (& text)[ARRSIZE])
+    constexpr TextPainterTextWithLen(const int8_t (& text)[ARRSIZE])    : TextPainterText<TextPainterBase>(text), text_len_{ARRSIZE} {}
+
+    template<size_t ARRSIZE>
+    constexpr TextPainterTextWithLen(const char   (& text)[ARRSIZE])    : TextPainterText<TextPainterBase>(text), text_len_{ARRSIZE} {}
+
+    constexpr TextPainterTextWithLen(const char *text, size_t text_len) : TextPainterText<TextPainterBase>(text), text_len_{text_len} {}
+    explicit constexpr TextPainterTextWithLen(const char *text)         : TextPainterText<TextPainterBase>(text), text_len_{0xFFFFFFFF} {}
+
+    constexpr TextPainterTextWithLen(Iterator start, Iterator end)      : TextPainterText<TextPainterBase>(start.GetBuffer()), text_len_{start.GetBufferLen() - end.GetBufferLen()} {}
+
+    static TextPainterTextWithLen trim(TextPainterTextWithLen text);
+
+    size_t CountCharacters() const
     {
-      return trim(text, ARRSIZE);
+      return TextPainterBase::TextProcessor::CountCharacters(this->text_, text_len_);
     }
 
-    static TextPainterTextWithLen trim(const char *text, size_t len);
-
-    constexpr size_t getLen() const { return Len; }
-  protected:
-
-    size_t Len;
-  };
-
-
-  class TextPainterDefaultBase
-  {
-  public:
-    typedef int_least8_t IndexType;
-    typedef size_t       TextLenType;
-
-    constexpr TextPainterDefaultBase(char* buffer, IndexType cols, IndexType rows, IndexType row_add)
-      : Buffer{buffer}, Cols {cols}, Rows{rows}, RowAdd{row_add} {};
-
-    constexpr TextPainterDefaultBase subPainter(IndexType col, IndexType row, IndexType ncol, IndexType nrow)
+    Iterator CreateIterator() const
     {
-      return TextPainterDefaultBase(Buffer + col + row * RowAdd,
-                                ::ecpp::min(::ecpp::max<IndexType>(0, Cols - col), ncol),
-                                ::ecpp::min(::ecpp::max<IndexType>(0, Rows - row), nrow),
-                                 RowAdd);
+      return Iterator(this->text_, text_len_);
     }
 
-    class LocationType
-    {
-    public:
-      IndexType Col;
-      IndexType Row;
-    };
-
-    static constexpr IndexType  StartIndex = 0;
   protected:
-    char*      Buffer;
-    /** number of columns */
-    IndexType  Cols;
-    /** number of rows */
-    IndexType  Rows;
-    /** add value to go to next row */
-    IndexType  RowAdd;
+    /** Size of the text buffer */
+    const size_t text_len_;
   };
 
-  template<typename TextPainterBase = TextPainterDefaultBase >
-  class TextPainter : protected TextPainterBase
+  template<typename TextPainterBase>
+  TextPainterTextWithLen<TextPainterBase> TextPainterTextWithLen<TextPainterBase>::trim(TextPainterTextWithLen text)
+  {
+    auto it    = text.CreateIterator();
+    auto start = it;
+    auto end   = start;
+
+    while(0 != *it)
+    {
+      if((*it).isVisible())
+        break;
+
+      ++it;
+    }
+
+    start = end = it;
+
+    while(0 != *it)
+    {
+      if((*it).isVisible())
+      {
+        ++it;
+        end = it;
+      }
+      else
+      {
+        ++it;
+      }
+    }
+
+    return TextPainterTextWithLen<TextPainterBase>(start, end);
+  }
+
+  template<typename TextPainterBase>
+  class TextPainter : public TextPainterBase
   {
   public:
+    typedef typename TextPainterBase::Location       Location;
+    typedef typename TextPainterBase::Column         Column;
+    typedef typename TextPainterBase::Row            Row;
+    typedef TextPainterTextWithLen<TextPainterBase>  TextWithLen;
+
     typedef typename TextPainterBase::IndexType    IndexType;
-    typedef typename TextPainterBase::TextLenType  TextLenType;
-    typedef typename TextPainterBase::LocationType LocationType;
+    typedef size_t                                 TextLenType;
 
-    constexpr TextPainter subPainter(IndexType col, IndexType row, IndexType ncol, IndexType nrow)
+    constexpr TextPainter(TextPainterBase parent)                               : TextPainterBase {parent, {0,0}, {num_col(), num_row()} } {}
+    constexpr TextPainter(TextPainterBase parent, Location start)               : TextPainterBase {parent, start} {}
+    constexpr TextPainter(TextPainterBase parent, Location start, Location end) : TextPainterBase {parent, start, end} {}
+
+    constexpr TextPainter CreateSubPainter(Location upper_left, Location lower_right)
     {
-      return TextPainter(TextPainterBase::subPainter(col,row,ncol,nrow));
+      return TextPainter(*this, upper_left, lower_right);
     }
 
-    constexpr IndexType getColCount() const {return this->Cols;}
-    constexpr IndexType getRowCount() const {return this->Rows;}
+    constexpr TextPainter CreateFieldPainter(Column col_start, Row r)
+    {
+      return CreateFieldPainter(col_start, r, num_col());
+    }
+
+    constexpr TextPainter CreateFieldPainter(Column col_start, Row r, Column col_end)
+    {
+      return TextPainter(*this, Location(col_start, r), Location(col_end, r + 1));
+    }
+
+    constexpr TextPainter CreateRowPainter(Row r)
+    {
+      return CreateFieldPainter(0, r, num_col());
+    }
+
+    constexpr Column num_col() const {return this->num_col_;}
+    constexpr Row    num_row() const {return this->num_row_;}
 
     void clear();
     void fill(char c);
-
-
-    void putChar(const char text, LocationType loc);
+    void putChar(const char text, Location loc);
 
     void putText(const char* text);
-    void putText(const char* text, TextLenType len);
-    void putText(const char* text, TextLenType len, IndexType offset);
-    void putText(TextPainterTextWithLen text, LocationType loc);
+    void putText(const char* text, size_t len);
+    void putText(const char* text, size_t len, Column offset);
+    void putText(TextWithLen text, Location loc);
 
     template<size_t ARRSIZE>
     void putText(const int8_t (& text)[ARRSIZE]) {putText((const char*)text, ARRSIZE);}
@@ -160,27 +191,17 @@ namespace ecpp::Ui::Text
     void putText(const int8_t (& text)[ARRSIZE], IndexType offset) {putText((const char*)text, ARRSIZE, offset);}
 
     void centerText(const char *text);
-    void centerText(TextPainterTextWithLen text);
+    void centerText(TextWithLen text);
 
     template<typename T>
     void putProgress(const ::ecpp::Units::Fraction<T> fraction);
 
     void iprintf(const char* format, ...);
 
-    template<size_t ARRSIZE>
-    void centerTrimmedText(const int8_t (& text)[ARRSIZE])
+    void centerTrimmedText(TextWithLen text)
     {
-      centerText(TextPainterTextWithLen::trim(text));
+      centerText(TextWithLen::trim(text));
     }
-
-    template<size_t ARRSIZE>
-    void centerTrimmedText(const char (& text)[ARRSIZE])
-    {
-      centerText(TextPainterTextWithLen::trim(text));
-    }
-
-  protected:
-    constexpr TextPainter(TextPainterBase init) : TextPainterBase {init} {}
   };
 
   template<typename TextPainterBase>
@@ -192,17 +213,22 @@ namespace ecpp::Ui::Text
   template<typename TextPainterBase>
   void TextPainter<TextPainterBase>::fill(char c)
   {
-    for(IndexType r = 0; r < this->Rows; r++)
-      memset(this->Buffer + r * this->RowAdd, c, this->Cols);
+    Location l(0,0);
+
+    for(l.row = 0; l.row < num_row(); l.row++)
+    {
+      for (l.col = 0; c < num_col(); l.col++)
+        (*this)[l] = c;
+    }
   }
 
   template<typename TextPainterBase>
-  void TextPainter<TextPainterBase>::putChar(const char text, LocationType loc)
+  void TextPainter<TextPainterBase>::putChar(const char text, Location loc)
   {
-    if( (loc.Col >= this->Cols) || (loc.Row >= this->Rows))
+    if( (loc.col >= num_col()) || (loc.row >= num_row()))
       return;
 
-    this->Buffer[loc.Col + loc.Row * this->RowAdd] = text;
+    (*this)[loc] = text;
   }
 
   template<typename TextPainterBase>
@@ -212,73 +238,64 @@ namespace ecpp::Ui::Text
   }
 
   template<typename TextPainterBase>
-  void TextPainter<TextPainterBase>::putText(const char* text, TextLenType len)
+  void TextPainter<TextPainterBase>::putText(const char* text, size_t len)
   {
     putText( {text, len}, {0,0});
   }
 
   template<typename TextPainterBase>
-  void TextPainter<TextPainterBase>::putText(const char* text, TextLenType len, IndexType offset)
+  void TextPainter<TextPainterBase>::putText(const char* text, size_t len, Column offset)
   {
     putText( {text, len}, { offset, 0 });
   }
 
   template<typename TextPainterBase>
-  void TextPainter<TextPainterBase>::putText(TextPainterTextWithLen text, LocationType loc)
+  void TextPainter<TextPainterBase>::putText(TextWithLen text, Location loc)
   {
-    auto text_len = text.getLen();
-    auto p = text.getText();
+    auto it = text.CreateIterator();
 
-    if(loc.Col >= this->Cols)
+    if(loc.col >= this->num_col())
       return;
 
-    while(text_len > 0)
+    while(loc.row < this->num_row())
     {
-      TextLenType l;
-      IndexType i;
-
-      if(loc.Row >= this->Rows)
-        return;
-
-      if(text_len > static_cast<decltype(text_len)>(this->Cols - loc.Col))
-        l = this->Cols - loc.Col;
-      else
-        l = text_len;
-
       /* manual copy of text till terminating 0 */
-      for(i = 0; (i < l) && ('\0' != p[i]); ++i)
-        this->Buffer[loc.Col + loc.Row * this->RowAdd + i] = p[i];
+      for(; loc.col < this->num_col(); ++loc.col, ++it)
+      {
+        auto cp = *it;
 
-      /* clear remainder */
-      memset(this->Buffer + loc.Col + loc.Row * this->RowAdd + i, ' ', l - i);
+        if (0 == cp)
+          break;
+        else
+          (*this)[loc] = cp;
+      }
 
-      p        += i;
-      text_len -= l;
+      for(; loc.col < this->num_col(); ++loc.col)
+        (*this)[loc] = ' ';
 
-      loc.Row += 1;
-      loc.Col  = 0;
+      loc.row++;
+      loc.col = 0;
     }
   }
-
 
   template<typename TextPainterBase>
   void TextPainter<TextPainterBase>::centerText(const char *text)
   {
-    centerText(TextPainterTextWithLen(text));
+    centerText(TextWithLen(text));
   }
 
   template<typename TextPainterBase>
-  void TextPainter<TextPainterBase>::centerText(TextPainterTextWithLen text)
+  void TextPainter<TextPainterBase>::centerText(TextWithLen text)
   {
-    IndexType offset;
-    auto length = text.getLen();
+    Location l(0,0);
+    auto it = text.CreateIterator();
+    auto c  = text.CountCharacters();
 
-    if (length > static_cast<decltype(length)>(TextPainterBase::Cols))
-      length = TextPainterBase::Cols;
+    if (c < num_col())
+      l.col = (num_col() - c) / 2;
 
-    offset = (TextPainterBase::Cols - length) / 2;
-
-    memcpy(TextPainterBase::Buffer + offset, text.getText(), length);
+    for(;l.col < num_col(); ++l.col, ++it)
+      (*this)[l] = *it;
   }
 
   template<typename TextPainterBase>
@@ -291,22 +308,28 @@ namespace ecpp::Ui::Text
     }
     else
     {
-      IndexType n = this->Cols;
+      Location l(0,0);
+      Column n = num_col();
 
       if(fraction.Nominator < fraction.Denominator)
         n = n * fraction.Nominator / fraction.Denominator;
 
-      memset(this->Buffer, '#', n);
+      for(;l.col < n; ++l.col)
+        (*this)[l] = '#';
     }
   }
 
   template<typename TextPainterBase>
   void TextPainter<TextPainterBase>::iprintf(const char* format, ...)
   {
+    char buffer[this->num_col()*2];
     ::std::va_list args;
+
     va_start(args, format);
-    vsniprintf(this->Buffer, this->Cols, format, args);
+    vsniprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
+
+    putText(buffer);
   }
 
 };

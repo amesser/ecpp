@@ -41,20 +41,22 @@ namespace ecpp::Ui::Text
   class ListItemDrawer
   {
   protected:
-    static void draw(TextPainter<> &painter, const LISTITEM & item, bool selected);
+    template<typename Painter>
+    static void draw(Painter &painter, const LISTITEM & item, bool selected);
   };
 
   template<typename LISTITEM>
-  void ListItemDrawer<LISTITEM>::draw(TextPainter<> &painter, const LISTITEM & item, bool selected)
+  template<typename Painter>
+  void ListItemDrawer<LISTITEM>::draw(Painter & painter, const LISTITEM & item, bool selected)
   {
-    auto cols = painter.getColCount();
+    auto cols = painter.num_col();
 
-    painter.subPainter(1, 0, cols - 1, 1).putText(item.getText());
+    painter.CreateFieldPainter(1, 0, cols - 1).putText(item.getText());
 
     if(selected)
     {
-      painter.putChar('[', {0,0} );
-      painter.putChar(']', {cols - 1,0});
+      painter[typename Painter::Location(0,0)]        = '[';
+      painter[typename Painter::Location(cols - 1,0)] = ']';
     }
   }
 
@@ -75,7 +77,8 @@ namespace ecpp::Ui::Text
     typedef ListItemDrawer<typename LISTMODEL::value_type > DrawerType;
     typedef typename LISTMODEL::size_type                   SizeType;
 
-    void draw(TextPainter<> &painter, const LISTMODEL & model);
+    template<typename Painter>
+    void draw(Painter &painter, const LISTMODEL & model);
 
     constexpr SizeType getSelection() const {return CurrentSelection;}
 
@@ -116,11 +119,11 @@ namespace ecpp::Ui::Text
 
 
   template<typename LISTMODEL>
-  void ArrayListWidget<LISTMODEL>::draw(TextPainter<> &painter, const LISTMODEL & model)
+  template<typename Painter>
+  void ArrayListWidget<LISTMODEL>::draw(Painter &painter, const LISTMODEL & model)
   {
     auto i    = CurrentSelection;
-    auto rows = painter.getRowCount();
-    auto cols = painter.getColCount();
+    auto rows = painter.num_row();
 
     /* ensure we fit into the model */
     if(CurrentSelection >= model.size())
@@ -133,7 +136,7 @@ namespace ecpp::Ui::Text
     painter.clear();
     for(auto r = 0; (r < rows) && (i < model.size()); ++r, ++i)
     {
-      auto s = painter.subPainter(0, r, cols, 1);
+      auto s = painter.CreateRowPainter(r);
       DrawerType::draw(s, model[i], i == CurrentSelection);
     }
   }

@@ -29,56 +29,73 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-
-#include "ecpp/Target/Bsp.hpp"
 #include "ecpp/Text/Utf8.hpp"
 
-namespace ecpp::Peripherals::Display::NHD
+using namespace ecpp::Text;
+
+size_t
+Utf8TextProcessor::CountCharacters(const char* string, size_t len)
 {
-  using namespace ::std;
+  TextIterator it(string, len);
+  size_t count;
 
-  struct CharacterDisplayLocation
-  {
-    constexpr CharacterDisplayLocation(uint8_t c)            : col(c) {};
-    constexpr CharacterDisplayLocation(uint8_t c, uint8_t r) : col(c), row(r) {};
-
-    uint_least8_t col {0};
-    uint_least8_t row {0};
-  };
-
-  class NHD0420DZW
-  {
-  public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
-
-    typedef uint8_t Character;
-
-    static constexpr Location display_size {20,4};
-  };
-
-
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-  {
-  public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
-
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
-  {
-  public:
-
-    void initDisplay();
-
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
-
-  protected:
-    void sendCommand(uint8_t cmd);
-  };
+  for(count = 0; 0 != *it; ++count, ++it);
+  return count;
 }
 
-#endif
+CodePoint Utf8TextProcessor::TextIterator::operator * () const
+{
+  uint32_t cp;
+  uint8_t  t;
+
+  if(string_len_ < 1)
+    return 0;
+
+  if (*string_ <= 127)
+    return *string_;
+
+  t = static_cast<uint8_t>(*string_);
+
+  if (0x80 == (t & 0xC0))
+    cp = *string_ & 0x3F;
+  else if ( (0xC0 == (t & 0xE0)) && string_len_ >= 2)
+    cp = (*string_ & 0x1F) << 6 | (*(string_+1) & 0x3F);
+  else
+    cp = 0;
+
+  return cp;
+}
+
+void Utf8TextProcessor::TextIterator::next()
+{
+  size_t l;
+
+  if(string_len_ < 1)
+    return;
+
+  if (*string_ > 0)
+  {
+    l = 1;
+  }
+  else if (*string_ < 0)
+  {
+    uint8_t t = static_cast<uint8_t>(*string_);
+
+    l = 1;
+    while(t & 0x40)
+    {
+      t <<= 1;
+      l  += 1;
+    }
+  }
+  else
+  {
+    l = 0;
+  }
+
+  if(string_len_ < l)
+    l = string_len_;
+
+  string_len_ -= l;
+  string_     += l;
+}

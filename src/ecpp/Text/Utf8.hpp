@@ -29,56 +29,55 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 
-#include "ecpp/Target/Bsp.hpp"
-#include "ecpp/Text/Utf8.hpp"
-
-namespace ecpp::Peripherals::Display::NHD
+namespace ecpp::Text
 {
-  using namespace ::std;
-
-  struct CharacterDisplayLocation
-  {
-    constexpr CharacterDisplayLocation(uint8_t c)            : col(c) {};
-    constexpr CharacterDisplayLocation(uint8_t c, uint8_t r) : col(c), row(r) {};
-
-    uint_least8_t col {0};
-    uint_least8_t row {0};
-  };
-
-  class NHD0420DZW
+  class CodePoint
   {
   public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
+    typedef ::std::uint32_t Value ;
 
-    typedef uint8_t Character;
+    constexpr CodePoint(Value cp = 0) : cp_(cp) {}
 
-    static constexpr Location display_size {20,4};
+    constexpr operator ::std::uint32_t() const { return cp_; }
+    constexpr bool isVisible()           const { return cp_ > 0x20; }
+
+    const Value cp_;
   };
 
-
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+  class Utf8TextProcessor
   {
   public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
+    class TextIterator;
+
+    static size_t CountCharacters(const char* string, size_t len);
+
+    static size_t CountCharacters(const char* string) { return CountCharacters(string, 0xFFFFFFFF); }
+
+    template<size_t len>
+    static size_t CountCharacters(const char (&string)[len]) { return CountCharacters(string, len); }
   };
 
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
+  class Utf8TextProcessor::TextIterator : public std::iterator<std::input_iterator_tag, CodePoint>
   {
   public:
+    constexpr TextIterator(const char* string, size_t string_len) : string_(string), string_len_(string_len) {}
+    constexpr TextIterator(TextIterator start, TextIterator end) : string_(start.string_), string_len_(start.string_len_ - end.string_len_) {}
 
-    void initDisplay();
+    CodePoint operator* () const;
 
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
+    TextIterator & operator ++() { next(); return *this; }
 
-  protected:
-    void sendCommand(uint8_t cmd);
+    const char* GetBuffer()    { return string_;}
+    size_t      GetBufferLen() {return string_len_;}
+  private:
+    const char* string_;
+    size_t      string_len_;
+
+    void next();
   };
-}
 
-#endif
+};

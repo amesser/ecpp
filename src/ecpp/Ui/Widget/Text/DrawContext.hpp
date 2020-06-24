@@ -43,13 +43,14 @@ namespace ecpp {
   using ::ecpp::Ui::Text::TextPainter;
 
   /* A context which paints to a field in a text display row */
-  template<typename INDEXTYPE>
-  class FieldContext : public TextPainter<>
+  template<typename _PainterType>
+  class FieldContext : public _PainterType
   {
   public:
-    typedef ::ecpp::Ui::Text::TextPainter<>::IndexType IndexType;
+    typedef _PainterType PainterType;
+    typedef typename PainterType::IndexType IndexType;
 
-    constexpr FieldContext(char* field, IndexType size) : TextPainter({field, size, 1, 0}) {};
+    constexpr FieldContext(PainterType &parent, IndexType ncols) : PainterType(parent.subPainter(0, 0, ncols, 1)) {};
 
     char & operator[] (IndexType i) {return this->Buffer[i]; }
 

@@ -36,6 +36,19 @@ using namespace ecpp::Peripherals::Display::NHD;
 using namespace ecpp::Units;
 using namespace ecpp::Target;
 
+
+/** Translates an utf8 code-point to NHD 0420 display coding */
+uint8_t NHD0420DZW::TextProcessor::encode(::ecpp::Text::CodePoint cp)
+{
+  if(cp == 0)
+    return 0x20;
+  else if (cp < 127)
+    return cp;
+  else
+    return '?';
+}
+
+
 void
 NHD0420DZW_4Bit::initDisplay()
 {

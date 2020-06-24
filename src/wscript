@@ -43,6 +43,7 @@ def build(bld):
       'ecpp/Abi/SimpleBinFormat.cpp',
       'ecpp/String.cpp',
       'ecpp/Time.cpp',
+      'ecpp/Text/Utf8.cpp',
       'ecpp/Ui/Text/Painter.cpp',
     ] + bld.path.ant_glob('ecpp/Peripherals/**/*.cpp')
 
