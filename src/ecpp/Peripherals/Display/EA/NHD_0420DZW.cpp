@@ -29,47 +29,20 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
+#include "ecpp/Peripherals/Display/EA/EA_OLEDM204.hpp"
+#include "ecpp/Units/Time.hpp"
 
-#include "ecpp/Peripherals/Display/CharacterDisplay.hpp"
-#include "ecpp/Target/Bsp.hpp"
-#include "ecpp/Text/Utf8.hpp"
+using namespace ecpp::Peripherals::Display;
+using namespace ecpp::Units;
+using namespace ecpp::Target;
 
-namespace ecpp::Peripherals::Display
+/** Translates an utf8 code-point to NHD 0420 display coding */
+uint8_t EAOLEDM204::TextProcessor::encode(::ecpp::Text::CodePoint cp)
 {
-  using namespace ::std;
-
-  class NHD0420DZW
-  {
-  public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
-
-    typedef uint8_t Character;
-
-    static constexpr Location display_size {20,4};
-  };
-
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-  {
-  public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
-
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
-  {
-  public:
-
-    void initDisplay();
-
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
-
-  protected:
-    void sendCommand(uint8_t cmd);
-  };
+  if(cp == 0)
+    return 0x20;
+  else if (cp < 127)
+    return cp;
+  else
+    return '?';
 }
-
-#endif

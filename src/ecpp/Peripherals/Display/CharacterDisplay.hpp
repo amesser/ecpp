@@ -29,47 +29,24 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
 
-#include "ecpp/Peripherals/Display/CharacterDisplay.hpp"
-#include "ecpp/Target/Bsp.hpp"
-#include "ecpp/Text/Utf8.hpp"
+#ifndef ECPP_PERIPHERALS_DISPLAY_CHARACTERDISPLAY_HPP_
+#define ECPP_PERIPHERALS_DISPLAY_CHARACTERDISPLAY_HPP_
+
+#include <cstdint>
 
 namespace ecpp::Peripherals::Display
 {
-  using namespace ::std;
-
-  class NHD0420DZW
+  using namespace std;
+  
+  struct CharacterDisplayLocation
   {
-  public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
+    constexpr CharacterDisplayLocation(uint8_t c)            : col(c) {};
+    constexpr CharacterDisplayLocation(uint8_t c, uint8_t r) : col(c), row(r) {};
 
-    typedef uint8_t Character;
-
-    static constexpr Location display_size {20,4};
+    uint_least8_t col {0};
+    uint_least8_t row {0};
   };
+};
+#endif /* ECPP_PERIPHERALS_DISPLAY_CHARACTERDISPLAY_HPP_ */
 
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-  {
-  public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
-
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
-  {
-  public:
-
-    void initDisplay();
-
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
-
-  protected:
-    void sendCommand(uint8_t cmd);
-  };
-}
-
-#endif

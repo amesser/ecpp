@@ -29,47 +29,27 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
+#ifndef ECPP_UI_TEXT_DRIVER_HPP_
+#define ECPP_UI_TEXT_DRIVER_HPP_
 
-#include "ecpp/Peripherals/Display/CharacterDisplay.hpp"
-#include "ecpp/Target/Bsp.hpp"
-#include "ecpp/Text/Utf8.hpp"
+#include "ecpp/Peripherals/Display/CharacterMapping.hpp"
+#include "ecpp/Ui/Text/Painter.hpp"
 
-namespace ecpp::Peripherals::Display
+namespace ecpp::Ui::Text
 {
-  using namespace ::std;
-
-  class NHD0420DZW
+  template<typename DisplayDriver, typename CharacterMapper = ::ecpp::Peripherals::Display::MappedTextArea<DisplayDriver> >
+  class BufferedDisplayDriver : public DisplayDriver
   {
   public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
+    /* typedef DisplayDriver                                               DisplayDriver; */
+    typedef typename DisplayDriver::Character                           BufferElement;
+    typedef ::ecpp::Ui::Text::TextPainter<CharacterMapper>              Painter;
 
-    typedef uint8_t Character;
-
-    static constexpr Location display_size {20,4};
-  };
-
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-  {
-  public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
-
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
-  {
-  public:
-
-    void initDisplay();
-
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
+    Painter CreatePainter() { return Painter(CharacterMapper(buffer_)); }
 
   protected:
-    void sendCommand(uint8_t cmd);
+    BufferElement buffer_[DisplayDriver::display_size.row][DisplayDriver::display_size.col];
   };
-}
 
-#endif
+}
+#endif /* ECPP_UI_TEXT_DRIVER_HPP_ */

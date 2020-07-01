@@ -40,35 +40,21 @@ namespace ecpp::Peripherals::Display
 {
   using namespace ::std;
 
-  class NHD0420DZW
+  class EAOLEDM204
   {
   public:
-    typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
+    using            Location = CharacterDisplayLocation;
+    class            TextProcessor;
 
-    typedef uint8_t Character;
+    typedef uint8_t  Character;
 
     static constexpr Location display_size {20,4};
   };
 
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+  class EAOLEDM204::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
   {
   public:
     static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
-
-
-  class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
-  {
-  public:
-
-    void initDisplay();
-
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
-
-  protected:
-    void sendCommand(uint8_t cmd);
   };
 }
 

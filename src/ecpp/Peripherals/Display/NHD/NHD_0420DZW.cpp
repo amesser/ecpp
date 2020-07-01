@@ -32,7 +32,7 @@
 #include "ecpp/Peripherals/Display/NHD/NHD_0420DZW.hpp"
 #include "ecpp/Units/Time.hpp"
 
-using namespace ecpp::Peripherals::Display::NHD;
+using namespace ecpp::Peripherals::Display;
 using namespace ecpp::Units;
 using namespace ecpp::Target;
 

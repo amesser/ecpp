@@ -29,6 +29,9 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
+#ifndef ECPP_TEXT_UTF8_HPP_
+#define ECPP_TEXT_UTF8_HPP_
+
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -81,3 +84,5 @@ namespace ecpp::Text
   };
 
 };
+
+#endif /* ECPP_TEXT_UTF8_HPP */
