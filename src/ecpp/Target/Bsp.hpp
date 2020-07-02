@@ -12,10 +12,12 @@ namespace ecpp::Target::Bsp
   template<typename T>
   void delay(T timeout);
 
-  void resetLcd(DisplayDriver &inst);
+  void ResetDisplay(DisplayDriver &inst);
   void setLcdRS(DisplayDriver &inst);
   void clearLcdRS(DisplayDriver &inst);
   void writeLcdNibble(DisplayDriver &inst, uint8_t val);
   void writeLcdByte(DisplayDriver &inst, uint8_t val);
+
+  void SendSPI(DisplayDriver &inst, const uint8_t *buffer, size_t buffer_len);
 };
 #endif

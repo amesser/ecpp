@@ -148,7 +148,10 @@ namespace ecpp::Ui::Text
     typedef typename TextPainterBase::IndexType    IndexType;
     typedef size_t                                 TextLenType;
 
-    constexpr TextPainter(TextPainterBase parent)                               : TextPainterBase {parent, {0,0}, {num_col(), num_row()} } {}
+    using TextPainterBase::num_col;
+    using TextPainterBase::num_row;
+
+    constexpr TextPainter(TextPainterBase parent)                               : TextPainterBase {parent, Location(0,0), Location(parent.num_col(), parent.num_row()) } {}
     constexpr TextPainter(TextPainterBase parent, Location start)               : TextPainterBase {parent, start} {}
     constexpr TextPainter(TextPainterBase parent, Location start, Location end) : TextPainterBase {parent, start, end} {}
 
@@ -171,9 +174,6 @@ namespace ecpp::Ui::Text
     {
       return CreateFieldPainter(0, r, num_col());
     }
-
-    constexpr Column num_col() const {return this->num_col_;}
-    constexpr Row    num_row() const {return this->num_row_;}
 
     void clear();
     void fill(char c);
@@ -217,8 +217,11 @@ namespace ecpp::Ui::Text
 
     for(l.row = 0; l.row < num_row(); l.row++)
     {
-      for (l.col = 0; c < num_col(); l.col++)
+      for (l.col = 0; l.col < num_col(); l.col++)
+      {
         (*this)[l] = c;
+      }
+
     }
   }
 

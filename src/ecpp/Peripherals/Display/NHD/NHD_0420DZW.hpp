@@ -64,8 +64,8 @@ namespace ecpp::Peripherals::Display
 
     void initDisplay();
 
-    void locateCursor(uint8_t col, uint8_t row);
-    void writeDDRAM(const void* b, uint8_t len);
+    void LocateCursor(uint8_t col, uint8_t row);
+    void WriteDDRAM(const void* b, uint8_t len);
 
   protected:
     void sendCommand(uint8_t cmd);

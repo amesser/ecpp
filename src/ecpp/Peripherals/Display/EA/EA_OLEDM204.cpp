@@ -36,8 +36,9 @@ using namespace ecpp::Peripherals::Display;
 using namespace ecpp::Units;
 using namespace ecpp::Target;
 
-/** Translates an utf8 code-point to NHD 0420 display coding */
-uint8_t EAOLEDM204::TextProcessor::encode(::ecpp::Text::CodePoint cp)
+/** Translates an utf8 code-point to EO OLEDM204 ROM A  display coding */
+uint8_t
+EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
 {
   if(cp == 0)
     return 0x20;
@@ -45,4 +46,67 @@ uint8_t EAOLEDM204::TextProcessor::encode(::ecpp::Text::CodePoint cp)
     return cp;
   else
     return '?';
+}
+
+static constexpr uint8_t EAOLEDM204_SpiModeDataMap[16] =
+{
+  0, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xf0
+};
+
+void
+EAOLEDM204_SpiMode::SendCommand(uint_least8_t command)
+{
+  uint8_t buffer[3] =
+  {
+    0xF8,
+    EAOLEDM204_SpiModeDataMap[command & 0x0F],
+    EAOLEDM204_SpiModeDataMap[(command >> 4) & 0x0F],
+  };
+
+  ecpp::Target::Bsp::SendSPI(*this, buffer, sizeof(buffer));
+  /* ecpp::Target::Bsp::delay(Milliseconds<>(1)); */
+}
+
+void
+EAOLEDM204_SpiMode::SendData(uint_least8_t data)
+{
+  uint8_t buffer[3] =
+  {
+    0xF8 | 0x02,
+    EAOLEDM204_SpiModeDataMap[data & 0x0F],
+    EAOLEDM204_SpiModeDataMap[(data >> 4) & 0x0F],
+  };
+
+  ecpp::Target::Bsp::SendSPI(*this, buffer, sizeof(buffer));
+}
+
+
+void
+EAOLEDM204_SpiMode::Init(uint_fast8_t rom_id)
+{
+  ecpp::Target::Bsp::ResetDisplay(*this);
+
+  SendCommand(0x3A);
+  SendCommand(0x09);
+  SendCommand(0x05);
+  SendCommand(0x38);
+  SendCommand(0x3A);
+  SendCommand(0x72);
+  SendData(rom_id << 2);
+  SendCommand(0x38);
+  SendCommand(0x0C);
+  SendCommand(0x01);
+}
+
+void
+EAOLEDM204_SpiMode::LocateCursor(uint8_t col, uint8_t row)
+{
+  SendCommand(0x80 | (col + row * 0x20));
+}
+
+void EAOLEDM204_SpiMode::WriteDDRAM(const uint8_t* b, uint8_t len)
+{
+
+  while(len--)
+    SendData(*(b++));
 }

@@ -36,25 +36,77 @@
 #include "ecpp/Target/Bsp.hpp"
 #include "ecpp/Text/Utf8.hpp"
 
+#include <codecvt>
+
 namespace ecpp::Peripherals::Display
 {
   using namespace ::std;
 
-  class EAOLEDM204
+  template<char rom>
+  class EAOLEDM204_ROM_ID {};
+
+  template<>
+  class EAOLEDM204_ROM_ID<'A'>
+  {
+  public:
+   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+    {
+    public:
+      static uint8_t encode(::ecpp::Text::CodePoint cp);
+    };
+
+    static constexpr uint_least8_t krom_id_ = 0;
+  };
+
+  template<>
+  class EAOLEDM204_ROM_ID<'B'>
+  {
+  public:
+   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+    {
+    public:
+      static uint8_t encode(::ecpp::Text::CodePoint cp);
+    };
+
+    static constexpr uint_least8_t krom_id_ = 0;
+  };
+
+  template<>
+  class EAOLEDM204_ROM_ID<'C'>
+  {
+  public:
+   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+    {
+    public:
+      static uint8_t encode(::ecpp::Text::CodePoint cp);
+    };
+
+    static constexpr uint_least8_t krom_id_ = 0;
+  };
+
+
+  class EAOLEDM204_SpiMode : public ::ecpp::Target::Bsp::DisplayDriver
   {
   public:
     using            Location = CharacterDisplayLocation;
-    class            TextProcessor;
-
     typedef uint8_t  Character;
 
     static constexpr Location display_size {20,4};
+
+    void SendCommand(uint_least8_t cmd);
+    void SendData(uint_least8_t data);
+    void Init(uint_fast8_t rom_id);
+
+    void LocateCursor(uint8_t col, uint8_t row);
+    void WriteDDRAM(const uint8_t* b, uint8_t len);
   };
 
-  class EAOLEDM204::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+  template<char rom, typename BusDriver = EAOLEDM204_SpiMode >
+  class EAOLEDM204 : public BusDriver
   {
   public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
+    using            TextProcessor = typename EAOLEDM204_ROM_ID<rom>::TextProcessor;
+    void             Init() { BusDriver::Init(EAOLEDM204_ROM_ID<rom>::krom_id_); }
   };
 }
 

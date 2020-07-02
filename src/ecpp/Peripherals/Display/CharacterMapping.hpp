@@ -86,6 +86,9 @@ namespace ecpp::Peripherals::Display
 
     constexpr Character operator [] (Location loc) { return Character(*(buffer_ + loc.col + loc.row * row_add_)); }
 
+    constexpr Column num_col() const {return num_col_;}
+    constexpr Row    num_row() const {return num_row_;}
+
   protected:
     BufferElement* const buffer_;
     /** number of columns */

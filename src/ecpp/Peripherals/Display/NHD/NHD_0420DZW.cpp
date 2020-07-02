@@ -52,7 +52,7 @@ uint8_t NHD0420DZW::TextProcessor::encode(::ecpp::Text::CodePoint cp)
 void
 NHD0420DZW_4Bit::initDisplay()
 {
-  Bsp::resetLcd(*this);
+  Bsp::ResetDisplay(*this);
   Bsp::clearLcdRS(*this);
 
   /* switch display controller to 4 bit */
@@ -79,7 +79,7 @@ NHD0420DZW_4Bit::initDisplay()
 }
 
 void
-NHD0420DZW_4Bit::locateCursor(uint8_t col, uint8_t row)
+NHD0420DZW_4Bit::LocateCursor(uint8_t col, uint8_t row)
 {
   Bsp::clearLcdRS(*this);
 
@@ -93,7 +93,7 @@ NHD0420DZW_4Bit::locateCursor(uint8_t col, uint8_t row)
 }
 
 void
-NHD0420DZW_4Bit::writeDDRAM(const void* b, uint8_t len)
+NHD0420DZW_4Bit::WriteDDRAM(const void* b, uint8_t len)
 {
   const uint8_t *p, *pend;
 
