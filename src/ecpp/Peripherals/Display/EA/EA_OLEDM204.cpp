@@ -44,8 +44,17 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
     return 0x20;
   else if (cp < 127)
     return cp;
-  else
-    return '?';
+
+  switch(cp)
+  {
+  case 0xC4 /* Ä */: return 0x5B;
+  case 0xD6 /* Ö */: return 0x5C;
+  case 0xDC /* Ü */: return 0x5E;
+  case 0xE4 /* ä */: return 0x7B;
+  case 0xF6 /* ö */: return 0x7C;
+  case 0xFC /* ü */: return 0x7E;
+  default: return '?';
+  }
 }
 
 static constexpr uint8_t EAOLEDM204_SpiModeDataMap[16] =

@@ -51,7 +51,7 @@ CodePoint Utf8TextProcessor::TextIterator::operator * () const
   if(string_len_ < 1)
     return 0;
 
-  if (*string_ <= 127)
+  if (*string_ >= 0)
     return *string_;
 
   t = static_cast<uint8_t>(*string_);
