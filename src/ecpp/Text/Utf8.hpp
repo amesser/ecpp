@@ -41,12 +41,12 @@ namespace ecpp::Text
   class CodePoint
   {
   public:
-    typedef ::std::uint32_t Value ;
+    typedef char32_t Value;
 
     constexpr CodePoint(Value cp = 0) : cp_(cp) {}
 
-    constexpr operator ::std::uint32_t() const { return cp_; }
-    constexpr bool isVisible()           const { return cp_ > 0x20; }
+    constexpr operator char32_t() const { return cp_; }
+    constexpr bool isVisible()    const { return cp_ > 0x20; }
 
     const Value cp_;
   };

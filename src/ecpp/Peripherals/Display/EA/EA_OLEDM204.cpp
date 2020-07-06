@@ -42,17 +42,50 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
 {
   if(cp == 0)
     return 0x20;
-  else if (cp < 127)
+  else if (cp == 0x24)
+      return '?';
+  else if (cp == 0x40)
+      return '?';
+  else if (cp >= 0x20 && cp <= 0x5A) /* 0-9, A-Z */
+    return cp;
+  else if (cp >= 0x61 && cp <= 0x7A) /* a-z */
     return cp;
 
   switch(cp)
   {
-  case 0xC4 /* Ä */: return 0x5B;
-  case 0xD6 /* Ö */: return 0x5C;
-  case 0xDC /* Ü */: return 0x5E;
-  case 0xE4 /* ä */: return 0x7B;
-  case 0xF6 /* ö */: return 0x7C;
-  case 0xFC /* ü */: return 0x7E;
+  case U'¤': return 0x24;
+  case U'Ä': return 0x5B;
+  case U'Ö': return 0x5C;
+  case U'Ü': return 0x5E;
+  case U'§': return 0x5F;
+  case U'ä': return 0x7B;
+  case U'ö': return 0x7C;
+  case U'ü': return 0x7E;
+  case U'µ': return 0x8F;
+  case U'@': return 0xA0;
+  case U'$': return 0xA2;
+  case U'è': return 0xA4;
+  case U'é': return 0xA5;
+  case U'ù': return 0xA6;
+  case U'ì': return 0xA7;
+  case U'ß': return 0xBE;
+  case U'Á': return 0xE2;
+  case U'Í': return 0xE3;
+  case U'Ó': return 0xE4;
+  case U'Ú': return 0xE5;
+  case U'Ý': return 0xE6;
+  case U'á': return 0xE7;
+  case U'í': return 0xE8;
+  case U'ó': return 0xE9;
+  case U'ú': return 0xEA;
+  case U'ý': return 0xEB;
+  case U'Ô': return 0xEC;
+  case U'ô': return 0xED;
+  case U'[': return 0xFA;
+  case U']': return 0xFC;
+  case U'{': return 0xFD;
+  case U'|': return 0xFE;
+  case U'}': return 0xFF;
   default: return '?';
   }
 }
