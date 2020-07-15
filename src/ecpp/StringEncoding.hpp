@@ -40,14 +40,7 @@ namespace ecpp
   class StringEncoding
   {
   public:
-    class Codepoint;
-
-    template<typename OutputCodepoint, typename InputCodepoint>
-    static OutputCodepoint convertCodepoint(InputCodepoint cp);
-  };
-
-  class StringEncoding::Codepoint
-  {
+    class Codepoint {};
   };
 };
 

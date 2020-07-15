@@ -183,7 +183,7 @@ namespace ecpp
   protected:
     constexpr OutputCodepoint toCodepoint() const
     {
-      return (this->buffer_size_ > 0) ? ReadEncoding::template convertCodepoint<OutputCodepoint>(InputCodepoint(*this)) :  OutputCodepoint::kSTRING_END() ;
+      return (this->buffer_size_ > 0) ? static_cast<OutputCodepoint>(InputCodepoint(*this)) :  OutputCodepoint::kSTRING_END() ;
     }
 
     friend _Encoding;
@@ -258,7 +258,7 @@ namespace ecpp
 
     InputCodepoint operator* () const
     {
-      return (this->buffer_size_ > 0) ? WriteEncoding::template convertCodepoint<InputCodepoint>(OutputCodepoint(*this)) :  InputCodepoint::kSTRING_END() ;
+      return (this->buffer_size_ > 0) ? static_cast<InputCodepoint>(OutputCodepoint(*this)) :  InputCodepoint::kSTRING_END() ;
     }
   };
 
