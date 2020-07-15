@@ -29,62 +29,31 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_TEXT_UTF8_HPP_
-#define ECPP_TEXT_UTF8_HPP_
+#ifndef ECPP_ITERATOR_HPP_
+#define ECPP_ITERATOR_HPP_
 
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
+#include <array>
 
-namespace ecpp::Text
+namespace ecpp
 {
-  class CodePoint
+  class EndIterationTag {};
+
+  template<typename T>
+  class SpawnIteratorBase
   {
   public:
-    typedef char32_t Value;
+    constexpr bool operator == ( const EndIterationTag&) const {return buffer_size_ == 0;}
+    constexpr bool operator != ( const EndIterationTag&) const {return buffer_size_ > 0; }
+    constexpr bool operator  < ( const EndIterationTag&) const {return buffer_size_ > 0; }
 
-    constexpr static char16_t kMAPPING_FAILED = U'¿';
+  protected:
+    constexpr SpawnIteratorBase(T* buffer, std::size_t buffer_size) : buffer_(buffer), buffer_size_(buffer) {}
 
-    constexpr CodePoint(Value cp = 0) : cp_(cp) {}
-
-    constexpr operator char32_t() const { return cp_; }
-    constexpr bool isVisible()    const { return cp_ > 0x20; }
-
-    const Value cp_;
+    T*      buffer_;
+    size_t  buffer_size_;
   };
 
-  class Utf8TextProcessor
-  {
-  public:
-    class TextIterator;
-
-    static size_t CountCharacters(const char* string, size_t len);
-
-    static size_t CountCharacters(const char* string) { return CountCharacters(string, 0xFFFFFFFF); }
-
-    template<size_t len>
-    static size_t CountCharacters(const char (&string)[len]) { return CountCharacters(string, len); }
-  };
-
-  class Utf8TextProcessor::TextIterator : public std::iterator<std::input_iterator_tag, CodePoint>
-  {
-  public:
-    constexpr TextIterator(const char* string, size_t string_len) : string_(string), string_len_(string_len) {}
-    constexpr TextIterator(TextIterator start, TextIterator end) : string_(start.string_), string_len_(start.string_len_ - end.string_len_) {}
-
-    CodePoint operator* () const;
-
-    TextIterator & operator ++() { next(); return *this; }
-
-    const char* GetBuffer()    { return string_;}
-    size_t      GetBufferLen() {return string_len_;}
-  private:
-    const char* string_;
-    size_t      string_len_;
-
-    void next();
-  };
-
-};
-
-#endif /* ECPP_TEXT_UTF8_HPP */
+  template<typename T>
+  using ConstSpawnIteratorBase = SpawnIteratorBase<const T>;
+}
+#endif

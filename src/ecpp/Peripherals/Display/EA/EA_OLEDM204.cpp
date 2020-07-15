@@ -43,9 +43,9 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
   if(cp == 0)
     return 0x20;
   else if (cp == 0x24)
-      return '?';
+      return kMAPPING_FAILED_CHAR;
   else if (cp == 0x40)
-      return '?';
+      return kMAPPING_FAILED_CHAR;
   else if (cp >= 0x20 && cp <= 0x5A) /* 0-9, A-Z */
     return cp;
   else if (cp >= 0x61 && cp <= 0x7A) /* a-z */
@@ -58,6 +58,7 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
   case U'Ö': return 0x5C;
   case U'Ü': return 0x5E;
   case U'§': return 0x5F;
+  case U'¿': return 0x60;
   case U'ä': return 0x7B;
   case U'ö': return 0x7C;
   case U'ü': return 0x7E;
@@ -86,7 +87,7 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
   case U'{': return 0xFD;
   case U'|': return 0xFE;
   case U'}': return 0xFF;
-  default: return '?';
+  default: return kMAPPING_FAILED_CHAR;
   }
 }
 

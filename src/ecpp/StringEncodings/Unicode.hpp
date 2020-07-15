@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2015-2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -29,62 +29,50 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_TEXT_UTF8_HPP_
-#define ECPP_TEXT_UTF8_HPP_
+#ifndef ECPP_STRINGENCODINGS_UNICODE_H_
+#define ECPP_STRINGENCODINGS_UNICODE_H_
 
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
+#include "ecpp/String.hpp"
+#include "ecpp/StringEncoding.hpp"
 
-namespace ecpp::Text
+namespace ecpp::StringEncodings
 {
-  class CodePoint
+  class Unicode : public ::ecpp::StringEncoding
   {
   public:
-    typedef char32_t Value;
+    class Codepoint;
 
-    constexpr static char16_t kMAPPING_FAILED = U'¿';
 
-    constexpr CodePoint(Value cp = 0) : cp_(cp) {}
-
-    constexpr operator char32_t() const { return cp_; }
-    constexpr bool isVisible()    const { return cp_ > 0x20; }
-
-    const Value cp_;
+  protected:
   };
 
-  class Utf8TextProcessor
+  class Utf8 : public Unicode
   {
   public:
-    class TextIterator;
+    using Unicode::Codepoint;
+    using BufferElement           = char;
 
-    static size_t CountCharacters(const char* string, size_t len);
-
-    static size_t CountCharacters(const char* string) { return CountCharacters(string, 0xFFFFFFFF); }
-
-    template<size_t len>
-    static size_t CountCharacters(const char (&string)[len]) { return CountCharacters(string, len); }
+    static void assign(ecpp::String<Utf8>::SpanBase<BufferElement> &span, Codepoint cp);
+    static void advance(ecpp::String<Utf8>::SpanBase<const BufferElement> &span);
   };
 
-  class Utf8TextProcessor::TextIterator : public std::iterator<std::input_iterator_tag, CodePoint>
+  class Unicode::Codepoint
   {
   public:
-    constexpr TextIterator(const char* string, size_t string_len) : string_(string), string_len_(string_len) {}
-    constexpr TextIterator(TextIterator start, TextIterator end) : string_(start.string_), string_len_(start.string_len_ - end.string_len_) {}
+    constexpr Codepoint(char32_t    val) : cp(val) {}
 
-    CodePoint operator* () const;
+    Codepoint(const ecpp::String<Utf8>::SpanIterator<const Utf8::BufferElement> &it);
 
-    TextIterator & operator ++() { next(); return *this; }
+    constexpr char32_t getRaw() const { return cp;}
 
-    const char* GetBuffer()    { return string_;}
-    size_t      GetBufferLen() {return string_len_;}
-  private:
-    const char* string_;
-    size_t      string_len_;
+    static constexpr Codepoint kSTRING_END()     { return 0; }
+    static constexpr Codepoint kMAPPING_FAILED() { return U'¿';}
 
-    void next();
+  protected:
+    char32_t  cp;
   };
 
-};
 
-#endif /* ECPP_TEXT_UTF8_HPP */
+}
+
+#endif

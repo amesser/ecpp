@@ -29,62 +29,72 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_TEXT_UTF8_HPP_
-#define ECPP_TEXT_UTF8_HPP_
+#include "ecpp/StringEncodings/Ascii.hpp"
 
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
+using namespace ecpp::StringEncodings;
 
-namespace ecpp::Text
+const char Ascii::kHEX_LOOKUP_TABLE[16] = "0123456789ABCDEF";
+
+bool
+Ascii::convertToHex(char *hex, uint8_t length, uint16_t value)
 {
-  class CodePoint
+  uint_fast8_t i;
+
+  for(i = length; i > 0; --i)
   {
-  public:
-    typedef char32_t Value;
+    hex[i-1] = kHEX_LOOKUP_TABLE[value & 0xF];
+    value = value / 16;
+  }
 
-    constexpr static char16_t kMAPPING_FAILED = U'¿';
+  return value > 0;
+}
 
-    constexpr CodePoint(Value cp = 0) : cp_(cp) {}
+/** convert a number into decimal format
+ *
+ * Implementation uses double dabble algorithm
+ */
+bool
+Ascii::convertToDecimal(char *decimal, uint8_t length, uint16_t value)
+{
+  uint_fast8_t overflow;
+  uint_fast8_t j;
 
-    constexpr operator char32_t() const { return cp_; }
-    constexpr bool isVisible()    const { return cp_ > 0x20; }
-
-    const Value cp_;
-  };
-
-  class Utf8TextProcessor
+  for(j = 0; j < length; ++j)
   {
-  public:
-    class TextIterator;
+    decimal[j] = '0';
+  }
 
-    static size_t CountCharacters(const char* string, size_t len);
-
-    static size_t CountCharacters(const char* string) { return CountCharacters(string, 0xFFFFFFFF); }
-
-    template<size_t len>
-    static size_t CountCharacters(const char (&string)[len]) { return CountCharacters(string, len); }
-  };
-
-  class Utf8TextProcessor::TextIterator : public std::iterator<std::input_iterator_tag, CodePoint>
+  overflow = 0;
+  for(j = 0; j < 16; ++j)
   {
-  public:
-    constexpr TextIterator(const char* string, size_t string_len) : string_(string), string_len_(string_len) {}
-    constexpr TextIterator(TextIterator start, TextIterator end) : string_(start.string_), string_len_(start.string_len_ - end.string_len_) {}
+    uint_fast8_t i;
+    uint8_t      mask;
 
-    CodePoint operator* () const;
+    mask = (value & 0x8000) ? 0x01 : 0;
+    value = value << 1;
 
-    TextIterator & operator ++() { next(); return *this; }
+    i = length;
+    while(i--)
+    {
+      uint_fast8_t bcd;
 
-    const char* GetBuffer()    { return string_;}
-    size_t      GetBufferLen() {return string_len_;}
-  private:
-    const char* string_;
-    size_t      string_len_;
+      bcd = static_cast<uint8_t>(decimal[i]) - '0';
 
-    void next();
-  };
+      if(bcd >= 5)
+      {
+        bcd += 3;
+      }
 
-};
+      bcd   = (bcd << 1) | mask;
 
-#endif /* ECPP_TEXT_UTF8_HPP */
+      mask  = (bcd & 0x10) >> 4;
+      bcd   = bcd & 0x0F;
+
+      decimal[i] = bcd + '0';
+    }
+
+    overflow = overflow | mask;
+  }
+
+  return overflow != 0;
+}

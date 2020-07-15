@@ -29,62 +29,49 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_TEXT_UTF8_HPP_
-#define ECPP_TEXT_UTF8_HPP_
+#include "ecpp/StringEncodings/Unicode.hpp"
+#include "ecpp/String.hpp"
 
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
+using namespace ::ecpp;
+using namespace ::ecpp::StringEncodings;
 
-namespace ecpp::Text
+#if 0
+template<>
+template<>
+void String<Unicode>::SpanIterator<char>::next()
+#endif
+
+void Utf8::advance(ecpp::String<Utf8>::SpanBase<const BufferElement> &span)
 {
-  class CodePoint
+  size_t l;
+
+  if(span.buffer_size_ < 1)
+    return;
+
+  if (*span.buffer_ > 0)
   {
-  public:
-    typedef char32_t Value;
-
-    constexpr static char16_t kMAPPING_FAILED = U'¿';
-
-    constexpr CodePoint(Value cp = 0) : cp_(cp) {}
-
-    constexpr operator char32_t() const { return cp_; }
-    constexpr bool isVisible()    const { return cp_ > 0x20; }
-
-    const Value cp_;
-  };
-
-  class Utf8TextProcessor
+    l = 1;
+  }
+  else if (*span.buffer_ < 0)
   {
-  public:
-    class TextIterator;
+    uint8_t t = static_cast<uint8_t>(*span.buffer_);
 
-    static size_t CountCharacters(const char* string, size_t len);
-
-    static size_t CountCharacters(const char* string) { return CountCharacters(string, 0xFFFFFFFF); }
-
-    template<size_t len>
-    static size_t CountCharacters(const char (&string)[len]) { return CountCharacters(string, len); }
-  };
-
-  class Utf8TextProcessor::TextIterator : public std::iterator<std::input_iterator_tag, CodePoint>
+    l = 1;
+    while(t & 0x40)
+    {
+      t <<= 1;
+      l  += 1;
+    }
+  }
+  else
   {
-  public:
-    constexpr TextIterator(const char* string, size_t string_len) : string_(string), string_len_(string_len) {}
-    constexpr TextIterator(TextIterator start, TextIterator end) : string_(start.string_), string_len_(start.string_len_ - end.string_len_) {}
+    l = span.buffer_size_;
+  }
 
-    CodePoint operator* () const;
+  if(span.buffer_size_ < l)
+    l = span.buffer_size_;
 
-    TextIterator & operator ++() { next(); return *this; }
+  span.buffer_size_   -= l;
+  span.buffer_        += l;
+}
 
-    const char* GetBuffer()    { return string_;}
-    size_t      GetBufferLen() {return string_len_;}
-  private:
-    const char* string_;
-    size_t      string_len_;
-
-    void next();
-  };
-
-};
-
-#endif /* ECPP_TEXT_UTF8_HPP */

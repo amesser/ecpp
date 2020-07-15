@@ -1,5 +1,5 @@
 /*
- *  Copyright 2015-2019 Andreas Messer <andi@bastelmap.de>
+ *  Copyright 2015-2020 Andreas Messer <andi@bastelmap.de>
  *
  *  This file is part of the Embedded C++ Platform Project.
  *
@@ -32,12 +32,266 @@
 #ifndef ECPP_STRING_HPP_
 #define ECPP_STRING_HPP_
 
-#include <ecpp/Datatypes.hpp>
+#include "ecpp/Datatypes.hpp"
+#include "ecpp/Iterator.hpp"
+
+#include <type_traits>
 #include <cstring>
+#include <iterator>
+#include <algorithm>
 
 namespace ecpp
 {
+  template<typename SpanElement>
+  class StringSpanBase
+  {
+  public:
+    constexpr StringSpanBase(const StringSpanBase<typename std::remove_const<SpanElement>::type > &init)
+      : buffer_(init.buffer_), buffer_size_(init.buffer_size_) {};
+
+    constexpr StringSpanBase(SpanElement* buffer, std::size_t buffer_size) :
+      buffer_(buffer), buffer_size_(buffer_size) {};
+
+    operator StringSpanBase<const SpanElement>() const
+    {
+      return StringSpanBase<const SpanElement>(buffer_, buffer_size_);
+    }
+
+  protected:
+    SpanElement* buffer_       {0};
+    std::size_t  buffer_size_  {0};
+
+    friend class StringSpanBase<const typename std::remove_const<SpanElement>::type >;
+  };
+
+  template<typename _Encoding>
   class String
+  {
+  public:
+    class Span;
+    class ConstSpan;
+
+    template<typename ReadEncoding>
+    class Reader;
+
+    template<typename ReadEncoding>
+    class ReadIterator;
+
+    template<typename WriteEncoding>
+    class Writer;
+
+    template<typename WriteEncoding>
+    class WriteIterator;
+
+  protected:
+    template<typename SpanElement>
+    class SpanIterator;
+
+    template<typename SpanElement>
+    class SpanBase;
+
+    friend _Encoding;
+    friend typename _Encoding::Codepoint;
+  };
+
+  template<typename _Encoding>
+  template<typename SpanElement>
+  class String<_Encoding>::SpanIterator : public StringSpanBase<SpanElement>
+  {
+  public:
+    constexpr SpanIterator(const StringSpanBase<SpanElement> &init) : StringSpanBase<SpanElement>(init) {};
+    using StringSpanBase<SpanElement>::StringSpanBase;
+
+  protected:
+    void         next();
+
+    friend _Encoding;
+    friend typename _Encoding::Codepoint;
+  };
+
+  template<typename _Encoding>
+  template<typename SpanElement>
+  class String<_Encoding>::SpanBase : public StringSpanBase<SpanElement>
+  {
+  public:
+    constexpr SpanBase(const StringSpanBase<SpanElement> &init) : StringSpanBase<SpanElement>(init) {};
+    using StringSpanBase<SpanElement>::StringSpanBase;
+
+    template<typename ReadEncoding>
+    constexpr Reader<ReadEncoding> createReader() const { return Reader<ReadEncoding>(*this); }
+
+  protected:
+    friend SpanIterator<SpanElement>;
+    friend _Encoding;
+    friend typename _Encoding::Codepoint;
+  };
+
+  template<typename _Encoding>
+  template<typename ReadEncoding>
+  class String<_Encoding>::Reader : String<_Encoding>::ConstSpan
+  {
+  public:
+    using Iterator = String<_Encoding>::ReadIterator<ReadEncoding>;
+
+    constexpr Reader(String<_Encoding>::ConstSpan &init) : String<_Encoding>::ConstSpan(init) {}
+    using String<_Encoding>::ConstSpan::ConstSpan;
+
+    constexpr Iterator            begin() { return Iterator(*this); }
+    constexpr EndIterationTag     end()   { return EndIterationTag(); }
+
+    friend SpanIterator<const typename _Encoding::BufferElement>;
+  };
+
+  template<typename _Encoding>
+  template<typename ReadEncoding>
+  class String<_Encoding>::ReadIterator : public std::iterator<std::forward_iterator_tag, typename ReadEncoding::Codepoint>,
+                                          public SpanIterator<const typename _Encoding::BufferElement>
+  {
+  public:
+    using InputCodepoint   = typename _Encoding::Codepoint;
+    using OutputCodepoint  = typename  ReadEncoding::Codepoint;
+
+    using SpanIterator<const typename _Encoding::BufferElement>::SpanIterator;
+
+    ReadIterator & operator++ ()
+    {
+      using SpanType = String<_Encoding>::SpanBase<const typename std::remove_const<typename _Encoding::BufferElement>::type>;
+      _Encoding::advance(reinterpret_cast<SpanType&>(*this));
+      return (*this);
+    }
+
+    constexpr bool operator < (const EndIterationTag&) const
+    {
+      return (this->buffer_size_ > 0) && (InputCodepoint(*this) != _Encoding::Codepoint::kSTRING_END() );
+    }
+
+    constexpr OutputCodepoint operator* () const
+    {
+      return toCodepoint();
+    }
+
+    template<typename W>
+    ReadIterator& operator >>(W &out)
+    {
+      using SpanType = String<_Encoding>::SpanBase<const typename std::remove_const<typename _Encoding::BufferElement>::type>;
+
+      out << toCodepoint();
+      _Encoding::advance(reinterpret_cast<SpanType&>(*this));
+
+      return (*this);
+    }
+  protected:
+    constexpr OutputCodepoint toCodepoint() const
+    {
+      return (this->buffer_size_ > 0) ? ReadEncoding::template convertCodepoint<OutputCodepoint>(InputCodepoint(*this)) :  OutputCodepoint::kSTRING_END() ;
+    }
+
+    friend _Encoding;
+  };
+
+  template<typename _Encoding>
+  template<typename WriteEncoding>
+  class String<_Encoding>::Writer : String<_Encoding>::Span
+  {
+  public:
+    using Iterator = String<_Encoding>::WriteIterator<WriteEncoding>;
+
+    constexpr Writer(String<_Encoding>::Span &init) : String<_Encoding>::Span(init) {}
+
+    constexpr Iterator            begin() { return Iterator(*this); }
+    constexpr EndIterationTag     end()   { return EndIterationTag(); }
+
+    friend SpanIterator<typename       _Encoding::BufferElement>;
+    friend SpanIterator<const typename _Encoding::BufferElement>;
+  };
+
+  template<typename _Encoding>
+  template<typename WriteEncoding>
+  class String<_Encoding>::WriteIterator : public std::iterator<std::output_iterator_tag, typename WriteEncoding::Codepoint>,
+                                           public SpanIterator<typename _Encoding::BufferElement>
+  {
+  protected:
+    class Proxy;
+  public:
+    using InputCodepoint   = typename WriteEncoding::Codepoint;
+    using OutputCodepoint  = typename     _Encoding::Codepoint;
+
+    using SpanIterator<typename _Encoding::BufferElement>::SpanIterator;
+
+    using Codepoint = typename WriteEncoding::Codepoint;
+
+    WriteIterator & operator ++()
+    {
+      using SpanType = String<_Encoding>::SpanBase<const typename std::remove_const<typename _Encoding::BufferElement>::type>;
+      _Encoding::advance(reinterpret_cast<SpanType&>(*this));
+      return (*this);
+    }
+    constexpr bool operator < (const EndIterationTag&) const { return (this->buffer_size_ > 0); }
+
+    WriteIterator & operator << (InputCodepoint cp)
+    {
+      using SpanType = String<_Encoding>::SpanBase<const typename std::remove_const<typename _Encoding::BufferElement>::type>;
+      _Encoding::assign(reinterpret_cast<String<_Encoding>::SpanBase<typename _Encoding::BufferElement>&>(*this), cp);
+      _Encoding::advance(reinterpret_cast<SpanType&>(*this));
+      return(*this);
+    }
+
+    constexpr Proxy operator* ()
+    {
+      return Proxy(*this);
+    }
+  protected:
+    friend _Encoding;
+  };
+
+  template<typename _Encoding>
+  template<typename WriteEncoding>
+  class String<_Encoding>::WriteIterator<WriteEncoding>::Proxy : public SpanBase<typename _Encoding::BufferElement>
+  {
+  public:
+    constexpr Proxy(const SpanBase<typename _Encoding::BufferElement> &init) : SpanBase<typename _Encoding::BufferElement>(init) {};
+
+    void operator = (const InputCodepoint &cp)
+    {
+      _Encoding::assign(*this, cp);
+    }
+
+    InputCodepoint operator* () const
+    {
+      return (this->buffer_size_ > 0) ? WriteEncoding::template convertCodepoint<InputCodepoint>(OutputCodepoint(*this)) :  InputCodepoint::kSTRING_END() ;
+    }
+  };
+
+
+  template<typename _Encoding>
+  class String<_Encoding>::Span : public SpanBase<typename _Encoding::BufferElement>
+  {
+  public:
+    constexpr Span(const Span &init) :
+      SpanBase<typename _Encoding::BufferElement>(init) {};
+    constexpr Span(const SpanBase<typename _Encoding::BufferElement> &init)
+      : SpanBase<typename _Encoding::BufferElement>(init) {};
+
+    using SpanBase<typename _Encoding::BufferElement>::SpanBase;
+
+    template<typename WriteEncoding>
+    constexpr Writer<WriteEncoding> createWriter() { return Writer<WriteEncoding>(*this); }
+  };
+
+  template<typename _Encoding>
+  class String<_Encoding>::ConstSpan : public SpanBase<const typename _Encoding::BufferElement>
+  {
+  public:
+    constexpr ConstSpan(const ConstSpan &init)
+      : SpanBase<const typename _Encoding::BufferElement>(init) {};
+    constexpr ConstSpan(const SpanBase<const typename _Encoding::BufferElement> &init)
+      : SpanBase<const typename _Encoding::BufferElement>(init) {};
+
+    using SpanBase<const typename _Encoding::BufferElement>::SpanBase;
+  };
+
+
+  class String_
   {
   public:
     static bool convertToHex(char *hex, uint8_t length, uint16_t value);

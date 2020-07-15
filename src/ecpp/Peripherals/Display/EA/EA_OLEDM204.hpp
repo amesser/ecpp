@@ -52,6 +52,9 @@ namespace ecpp::Peripherals::Display
    class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
     {
     public:
+      /** Reverse exclamantion mark */
+      static constexpr uint8_t kMAPPING_FAILED_CHAR = 0x60;
+
       static uint8_t encode(::ecpp::Text::CodePoint cp);
     };
 

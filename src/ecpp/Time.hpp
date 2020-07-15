@@ -8,6 +8,7 @@
 #ifndef ECPP_TIME_HPP_
 #define ECPP_TIME_HPP_
 
+#include "ecpp/StringEncodings/Ascii.hpp"
 #include "ecpp/Datatypes.hpp"
 #include "ecpp/Operators.hpp"
 #include "ecpp/String.hpp"
@@ -494,21 +495,24 @@ namespace ecpp
   template<typename TimeType>
   void formatTime(const TimeType& dt, char (&Buffer)[8])
   {
+    using ecpp::StringEncodings::Ascii;
+
     Buffer[2] = ':';
     Buffer[5] = ':';
-    String::convertToDecimal(&(Buffer[0]), 2, dt.getHour());
-    String::convertToDecimal(&(Buffer[3]), 2, dt.getMinute());
-    String::convertToDecimal(&(Buffer[6]), 2, dt.getSecond());
+    Ascii::convertToDecimal(&(Buffer[0]), 2, dt.getHour());
+    Ascii::convertToDecimal(&(Buffer[3]), 2, dt.getMinute());
+    Ascii::convertToDecimal(&(Buffer[6]), 2, dt.getSecond());
   }
 
   template<typename DateType>
   void formatDate(const DateType& dt, char (&Buffer)[10])
   {
+    using ecpp::StringEncodings::Ascii;
     Buffer[4] = '-';
     Buffer[7] = '-';
-    String::convertToDecimal(&(Buffer[0]),  4, dt.getYear());
-    String::convertToDecimal(&(Buffer[5]),  2, dt.getMonth() + 1);
-    String::convertToDecimal(&(Buffer[8]),  2, dt.getDay()   + 1);
+    Ascii::convertToDecimal(&(Buffer[0]),  4, dt.getYear());
+    Ascii::convertToDecimal(&(Buffer[5]),  2, dt.getMonth() + 1);
+    Ascii::convertToDecimal(&(Buffer[8]),  2, dt.getDay()   + 1);
   }
 
   template<typename DateTimeType>
