@@ -42,8 +42,8 @@ namespace ecpp::Ui::Text
   {
   public:
     /* typedef DisplayDriver                                               DisplayDriver; */
-    typedef typename DisplayDriver::Character                           BufferElement;
-    typedef ::ecpp::Ui::Text::TextPainter<CharacterMapper>              Painter;
+    using BufferElement = typename DisplayDriver::DisplayEncoding::BufferElement;
+    using Painter       = ::ecpp::Ui::Text::TextPainter<CharacterMapper>;
 
     Painter CreatePainter() { return Painter(CharacterMapper(buffer_)); }
 

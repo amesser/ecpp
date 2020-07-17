@@ -55,28 +55,50 @@ namespace ecpp
     using  Span      = typename String<Encoding>::Span;
     using  ConstSpan = typename String<Encoding>::ConstSpan;
 
+    using  Decoder  = typename String<Encoding>::template Reader<StringEncodings::Unicode>;
+
+    using ::std::array<typename _Encoding::BufferElement, BufferSize>::array;
+
+    template<typename RhsReader>
+    ArrayString(RhsReader decoder)
+    {
+      this->operator=(decoder);
+    }
+
+    constexpr ConstSpan toConstSpan() const { return ConstSpan(array_type::data(), array_type::size());}
+    constexpr operator  ConstSpan()   const { return toConstSpan(); }
+
+    ConstSpan trim()            const { return toConstSpan().trim(); }
+    size_t    countCharacters() const { return toConstSpan().countCharacters(); }
+
     void assignRawValue(const typename _Encoding::BufferElement* value, std::size_t value_size)
     {
       memcpy(data(), value, std::min(value_size, BufferSize));
     }
-
-    using Decoder  = typename String<Encoding>::template Reader<StringEncodings::Unicode>;
 
     Decoder decode() const
     {
       return ConstSpan(array_type::data(), array_type::size()).template createReader<ecpp::StringEncodings::Unicode>();
     }
 
-    template<typename OtherEncoding, std::size_t OtherBufferSize>
-    constexpr bool operator ==( const ArrayString<OtherEncoding,OtherBufferSize> &rhs) const
+    bool operator ==( const ArrayString &rhs) const
     {
-      return this->asStdArray() == rhs.asStdArray();
+      return asStdArray() == rhs.asStdArray();
     }
 
-    template<typename OtherEncoding, std::size_t OtherBufferSize>
-    constexpr bool operator !=( const ArrayString<OtherEncoding,OtherBufferSize> &rhs) const
+    bool operator !=( const ArrayString &rhs) const
     {
-      return this->asStdArray() != rhs.asStdArray();
+      return asStdArray() != rhs.asStdArray();
+    }
+
+    bool operator ==( ConstSpan rhs) const
+    {
+      return this->toConstSpan() == rhs;
+    }
+
+    bool operator !=( ConstSpan rhs) const
+    {
+      return this->toConstSpan() != rhs;
     }
 
     template<typename RhsReader>
@@ -97,7 +119,6 @@ namespace ecpp
   protected:
     const array_type & asStdArray() const {return *this; }
   };
-
 }
 
 #endif

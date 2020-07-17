@@ -41,9 +41,6 @@ namespace ecpp::StringEncodings
   {
   public:
     class Codepoint;
-
-
-  protected:
   };
 
   class Utf8 : public Unicode
@@ -52,24 +49,30 @@ namespace ecpp::StringEncodings
     using Unicode::Codepoint;
     using BufferElement           = char;
 
-    static void assign(ecpp::String<Utf8>::SpanBase<BufferElement> &span, Codepoint cp);
+    static void assign(Codepoint cp, ecpp::String<Utf8>::Span& dest);
     static void advance(ecpp::String<Utf8>::SpanBase<const BufferElement> &span);
   };
 
-  class Unicode::Codepoint
+  class Unicode::Codepoint : public ecpp::StringEncoding::Codepoint
   {
   public:
-    constexpr Codepoint(char32_t    val) : cp(val) {}
+    constexpr Codepoint(char32_t    val) : val_(val) {}
 
-    Codepoint(const ecpp::String<Utf8>::SpanIterator<const Utf8::BufferElement> &it);
+    bool isVisible() const;
+    Codepoint(const ecpp::String<Utf8>::ConstSpan &it);
 
-    constexpr char32_t getRaw() const { return cp;}
+    constexpr char32_t getRaw() const { return val_;}
+
+    constexpr bool operator ==(const Codepoint &rhs) { return rhs.val_ == val_; }
+    constexpr bool operator !=(const Codepoint &rhs) { return rhs.val_ != val_; }
 
     static constexpr Codepoint kSTRING_END()     { return 0; }
     static constexpr Codepoint kMAPPING_FAILED() { return U'¿';}
 
   protected:
-    char32_t  cp;
+    char32_t  val_;
+
+    friend Utf8;
   };
 
 

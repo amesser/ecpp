@@ -37,15 +37,28 @@ using namespace ecpp::Units;
 using namespace ecpp::Target;
 
 /** Translates an utf8 code-point to EO OLEDM204 ROM A  display coding */
-uint8_t
-EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
+
+using ecpp::StringEncoding;
+using ecpp::StringEncodings::Utf8;
+
+
+template<>
+void StringEncoding::convert<Utf8, EAOLEDM204_ROM_ID<'A'>::DisplayEncoding>(const ecpp::String<Utf8>::ConstSpan &src, ecpp::String<EAOLEDM204_ROM_ID<'A'>::DisplayEncoding>::Span &dest)
+{
+  auto cp         = *(src.begin());
+  *(dest.begin()) = EAOLEDM204_ROM_ID<'A'>::DisplayEncoding::Codepoint::createFromUnicode(cp.getRaw());
+}
+
+
+EAOLEDM204_ROM_ID<'A'>::DisplayEncoding::Codepoint
+EAOLEDM204_ROM_ID<'A'>::DisplayEncoding::createFromUnicode(char32_t cp)
 {
   if(cp == 0)
     return 0x20;
   else if (cp == 0x24)
-      return kMAPPING_FAILED_CHAR;
+    return Codepoint::kMAPPING_FAILED();
   else if (cp == 0x40)
-      return kMAPPING_FAILED_CHAR;
+    return Codepoint::kMAPPING_FAILED();
   else if (cp >= 0x20 && cp <= 0x5A) /* 0-9, A-Z */
     return cp;
   else if (cp >= 0x61 && cp <= 0x7A) /* a-z */
@@ -87,8 +100,10 @@ EAOLEDM204_ROM_ID<'A'>::TextProcessor::encode(::ecpp::Text::CodePoint cp)
   case U'{': return 0xFD;
   case U'|': return 0xFE;
   case U'}': return 0xFF;
-  default: return kMAPPING_FAILED_CHAR;
+  default: break;
   }
+
+  return Codepoint::kMAPPING_FAILED();
 }
 
 static constexpr uint8_t EAOLEDM204_SpiModeDataMap[16] =

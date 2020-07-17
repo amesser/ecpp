@@ -45,7 +45,9 @@ def build(bld):
       'ecpp/Time.cpp',
       'ecpp/Text/Utf8.cpp',
       'ecpp/Ui/Text/Painter.cpp',
-    ] + bld.path.ant_glob('ecpp/Peripherals/**/*.cpp')
+    ] \
+      + bld.path.ant_glob('ecpp/Peripherals/**/*.cpp') \
+      + bld.path.ant_glob('ecpp/StringEncodings/**/*.cpp')
 
     sourcefiles = {
         'avr-' : [

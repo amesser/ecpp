@@ -29,77 +29,29 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#include "ecpp/StringEncodings/Ascii.hpp"
+#ifndef ECPP_STRINGOPERATIONS_H_
+#define ECPP_STRINGOPERATIONS_H_
 
-using namespace ecpp::StringEncodings;
+#include <cstddef>
 
-
-bool
-Ascii::convertToHex(char *hex, uint8_t length, uint16_t value)
+namespace ecpp
 {
-  uint_fast8_t i;
-
-  for(i = length; i > 0; --i)
+  class StringOperations
   {
-    const auto digit = (value & 0xF);
+  public:
+    template<typename Span>
+    static std::size_t countCharacters(Span span);
+  };
 
-    if (digit < 10)
-      hex[i-1] = digit + '0';
-    else
-      hex[i-1] = digit - '\x0a' + 'A';
-
-    value = value / 16;
-  }
-
-  return value > 0;
-}
-
-/** convert a number into decimal format
- *
- * Implementation uses double dabble algorithm
- */
-bool
-Ascii::convertToDecimal(char *decimal, uint8_t length, uint16_t value)
-{
-  uint_fast8_t overflow;
-  uint_fast8_t j;
-
-  for(j = 0; j < length; ++j)
+  template<typename Span>
+  size_t StringOperations::countCharacters(Span span)
   {
-    decimal[j] = '0';
+    size_t count = 0;
+
+    for (auto it = span.begin(); it < span.end(); ++it)
+      ++count;
+
+    return count;
   }
-
-  overflow = 0;
-  for(j = 0; j < 16; ++j)
-  {
-    uint_fast8_t i;
-    uint8_t      mask;
-
-    mask = (value & 0x8000) ? 0x01 : 0;
-    value = value << 1;
-
-    i = length;
-    while(i--)
-    {
-      uint_fast8_t bcd;
-
-      bcd = static_cast<uint8_t>(decimal[i]) - '0';
-
-      if(bcd >= 5)
-      {
-        bcd += 3;
-      }
-
-      bcd   = (bcd << 1) | mask;
-
-      mask  = (bcd & 0x10) >> 4;
-      bcd   = bcd & 0x0F;
-
-      decimal[i] = bcd + '0';
-    }
-
-    overflow = overflow | mask;
-  }
-
-  return overflow != 0;
-}
+};
+#endif

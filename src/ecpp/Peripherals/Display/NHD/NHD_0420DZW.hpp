@@ -34,7 +34,7 @@
 
 #include "ecpp/Peripherals/Display/CharacterDisplay.hpp"
 #include "ecpp/Target/Bsp.hpp"
-#include "ecpp/Text/Utf8.hpp"
+#include "ecpp/SimpleStringEncoding.hpp"
 
 namespace ecpp::Peripherals::Display
 {
@@ -44,19 +44,31 @@ namespace ecpp::Peripherals::Display
   {
   public:
     typedef CharacterDisplayLocation Location;
-    class                            TextProcessor;
-
-    typedef uint8_t Character;
+    class   DisplayEncoding;
 
     static constexpr Location display_size {20,4};
   };
 
-  class NHD0420DZW::TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+  class NHD0420DZW::DisplayEncoding : public ecpp::SimpleStringEncoding<uint8_t>
   {
   public:
-    static uint8_t encode(::ecpp::Text::CodePoint cp);
-  };
+    using Codepoint = ecpp::SimpleStringEncoding<uint8_t>::SimpleCodepoint<DisplayEncoding>;
 
+    static Codepoint createFromUnicode(char32_t uc);
+
+    static constexpr BufferElement kMAPPING_FAILED_CHAR = 0x60;
+
+    static void assign(Codepoint cp, ecpp::String<DisplayEncoding>::SpanBase<uint8_t> &dest)
+    {
+      if(dest.buffer_size_ > 0)
+        *(dest.buffer_) = cp.val_;
+    }
+
+    static void assign(ecpp::StringEncodings::Unicode::Codepoint cp, ecpp::String<DisplayEncoding>::SpanBase<uint8_t> &dest)
+    {
+      assign(createFromUnicode(cp.getRaw()), dest);
+    }
+  };
 
   class NHD0420DZW_4Bit : public NHD0420DZW, ::ecpp::Target::Bsp::DisplayDriver
   {

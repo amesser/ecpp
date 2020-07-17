@@ -30,97 +30,16 @@
  *  version.
  *  */
 #include "ecpp/StringEncodings/Unicode.hpp"
-#include "ecpp/String.hpp"
 
-using namespace ::ecpp;
 using namespace ::ecpp::StringEncodings;
 
-#if 0
-template<>
-template<>
-void String<Unicode>::SpanIterator<char>::next()
-#endif
-
-void Utf8::advance(ecpp::String<Utf8>::SpanBase<const BufferElement> &span)
+bool Unicode::Codepoint::isVisible() const
 {
-  size_t l;
-
-  if(span.buffer_size_ < 1)
-    return;
-
-  if (*span.buffer_ > 0)
+  switch(val_)
   {
-    l = 1;
+    case U' ':  return false;
+    case U'\t': return false;
+    default:
+      return true;
   }
-  else if (*span.buffer_ < 0)
-  {
-    uint8_t t = static_cast<uint8_t>(*span.buffer_);
-
-    l = 1;
-    while(t & 0x40)
-    {
-      t <<= 1;
-      l  += 1;
-    }
-  }
-  else
-  {
-    l = span.buffer_size_;
-  }
-
-  if(span.buffer_size_ < l)
-    l = span.buffer_size_;
-
-  span.buffer_size_   -= l;
-  span.buffer_        += l;
-}
-
-
-Unicode::Codepoint::Codepoint(const ecpp::String<Utf8>::ConstSpan &it)
-  : val_(0)
-{
-  if(it.buffer_size_ > 0)
-  {
-    if (*(it.buffer_) >= 0)
-    {
-      val_ = *(it.buffer_);
-    }
-    else
-    {
-      uint8_t t = static_cast<uint8_t>(*(it.buffer_));
-
-      if (0x80 == (t & 0xC0))
-        val_ = *(it.buffer_) & 0x3F;
-      else if ( (0xC0 == (t & 0xE0)) && it.buffer_size_ >= 2)
-        val_ = (*(it.buffer_) & 0x1F) << 6 | (*((it.buffer_)+1) & 0x3F);
-      else
-        val_ = 0;
-    }
-  }
-}
-
-void
-Utf8::assign(Codepoint cp, ecpp::String<Utf8>::Span& dest)
-{
-  if(dest.buffer_size_  > 0)
-  {
-    if (cp.val_ < 128)
-    {
-      *(dest.buffer_) = cp.val_;
-    }
-    else if (cp.val_ > 0x7FF)
-    {
-      *(dest.buffer_) = 0x1A;
-    }
-    else if ((cp.val_ <= 0x7FF) && (dest.buffer_size_ >= 2))
-    {
-      *(dest.buffer_ + 0) = 0xC0 | ((cp.val_ >> 6) & 0x1F);
-      *(dest.buffer_ + 1) = 0x80 | ((cp.val_ >> 6) & 0x3F);
-    }
-    else
-    {
-      *(dest.buffer_) = 0;
-    }
-  }
-
 }

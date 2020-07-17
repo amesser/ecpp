@@ -45,9 +45,6 @@ namespace ecpp::StringEncodings
 
     static bool convertToHex(char *hex, uint8_t length, uint16_t value);
     static bool convertToDecimal(char *decimal, uint8_t length, uint16_t value);
-
-  protected:
-    static const char kHEX_LOOKUP_TABLE[16];
   };
 
   class Ascii::Codepoint

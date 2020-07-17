@@ -29,14 +29,14 @@
  *  do not wish to do so, delete this exception statement from your
  *  version.
  *  */
-#ifndef ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
-#define ECPP_PERIPHERALS_DISPLAY_NHD_NHD_0420DZW_HPP_
+#ifndef ECPP_PERIPHERALS_DISPLAY_EA_EA_OLEDM204_HPP_
+#define ECPP_PERIPHERALS_DISPLAY_EA_EA_OLEDM204_HPP_
 
 #include "ecpp/Peripherals/Display/CharacterDisplay.hpp"
 #include "ecpp/Target/Bsp.hpp"
+#include "ecpp/SimpleStringEncoding.hpp"
+#include "ecpp/StringEncodings/Unicode.hpp"
 #include "ecpp/Text/Utf8.hpp"
-
-#include <codecvt>
 
 namespace ecpp::Peripherals::Display
 {
@@ -49,44 +49,29 @@ namespace ecpp::Peripherals::Display
   class EAOLEDM204_ROM_ID<'A'>
   {
   public:
-   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
+    static constexpr uint_least8_t krom_id_ = 0;
+
+    class DisplayEncoding : public ecpp::SimpleStringEncoding<uint8_t>
     {
     public:
-      /** Reverse exclamantion mark */
-      static constexpr uint8_t kMAPPING_FAILED_CHAR = 0x60;
+      using Codepoint = ecpp::SimpleStringEncoding<uint8_t>::SimpleCodepoint<DisplayEncoding>;
 
-      static uint8_t encode(::ecpp::Text::CodePoint cp);
+      static Codepoint createFromUnicode(char32_t uc);
+
+      static constexpr BufferElement kMAPPING_FAILED_CHAR = 0x60;
+
+      static void assign(Codepoint cp, ecpp::String<DisplayEncoding>::SpanBase<uint8_t> &dest)
+      {
+        if(dest.buffer_size_ > 0)
+          *(dest.buffer_) = cp.val_;
+      }
+
+      static void assign(ecpp::StringEncodings::Unicode::Codepoint cp, ecpp::String<DisplayEncoding>::SpanBase<uint8_t> &dest)
+      {
+        assign(createFromUnicode(cp.getRaw()), dest);
+      }
     };
-
-    static constexpr uint_least8_t krom_id_ = 0;
   };
-
-  template<>
-  class EAOLEDM204_ROM_ID<'B'>
-  {
-  public:
-   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-    {
-    public:
-      static uint8_t encode(::ecpp::Text::CodePoint cp);
-    };
-
-    static constexpr uint_least8_t krom_id_ = 0;
-  };
-
-  template<>
-  class EAOLEDM204_ROM_ID<'C'>
-  {
-  public:
-   class TextProcessor : public ::ecpp::Text::Utf8TextProcessor
-    {
-    public:
-      static uint8_t encode(::ecpp::Text::CodePoint cp);
-    };
-
-    static constexpr uint_least8_t krom_id_ = 0;
-  };
-
 
   class EAOLEDM204_SpiMode : public ::ecpp::Target::Bsp::DisplayDriver
   {
@@ -108,7 +93,7 @@ namespace ecpp::Peripherals::Display
   class EAOLEDM204 : public BusDriver
   {
   public:
-    using            TextProcessor = typename EAOLEDM204_ROM_ID<rom>::TextProcessor;
+    using            DisplayEncoding = typename EAOLEDM204_ROM_ID<rom>::DisplayEncoding;
     void             Init() { BusDriver::Init(EAOLEDM204_ROM_ID<rom>::krom_id_); }
   };
 }

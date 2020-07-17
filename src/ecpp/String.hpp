@@ -49,14 +49,17 @@ namespace ecpp
     constexpr StringSpanBase(const StringSpanBase<typename std::remove_const<SpanElement>::type > &init)
       : buffer_(init.buffer_), buffer_size_(init.buffer_size_) {};
 
-    constexpr StringSpanBase(SpanElement* buffer, std::size_t buffer_size) :
-      buffer_(buffer), buffer_size_(buffer_size) {};
+    constexpr StringSpanBase(SpanElement* buffer, std::size_t buffer_size)
+      : buffer_(buffer), buffer_size_(buffer_size) {};
+
+    template<size_t N>
+    constexpr StringSpanBase(SpanElement (&buffer)[N])
+      : buffer_(buffer), buffer_size_(N) {};
 
     operator StringSpanBase<const SpanElement>() const
     {
       return StringSpanBase<const SpanElement>(buffer_, buffer_size_);
     }
-
   protected:
     SpanElement* buffer_       {0};
     std::size_t  buffer_size_  {0};
@@ -103,8 +106,6 @@ namespace ecpp
     using StringSpanBase<SpanElement>::StringSpanBase;
 
   protected:
-    void         next();
-
     friend _Encoding;
     friend typename _Encoding::Codepoint;
   };
@@ -120,26 +121,62 @@ namespace ecpp
     template<typename ReadEncoding>
     constexpr Reader<ReadEncoding> createReader() const { return Reader<ReadEncoding>(*this); }
 
+    using ConstIterator = String<_Encoding>::ReadIterator<_Encoding>;
+
+    constexpr ConstIterator       begin() const { return ConstIterator(*this); }
+    constexpr EndIterationTag     end()   const { return EndIterationTag(); }
+
+    constexpr SpanBase asSpanBase() const { return SpanBase(*this); }
+
+    bool operator == (const SpanBase& rhs) const;
+    bool operator != (const SpanBase& rhs) const;
+
   protected:
     friend SpanIterator<SpanElement>;
     friend _Encoding;
     friend typename _Encoding::Codepoint;
   };
 
+  template<typename Encoding>
+  template<typename SpanElement>
+  bool String<Encoding>::SpanBase<SpanElement>::operator == (const SpanBase& rhs) const
+  {
+    auto i = begin();
+    auto j = rhs.begin();
+
+    while((i < end()) && (j < rhs.end()))
+    {
+      if (*i != *j)
+        break;
+    }
+
+    return *i == *j;
+  }
+
+  template<typename Encoding>
+  template<typename SpanElement>
+  bool String<Encoding>::SpanBase<SpanElement>::operator != (const SpanBase& rhs) const
+  {
+    auto i = begin();
+    auto j = rhs.begin();
+
+    while((i < end()) && (j < rhs.end()))
+    {
+      if (*i != *j)
+        break;
+    }
+
+    return *i != *j;
+  }
+
+
   template<typename _Encoding>
   template<typename ReadEncoding>
-  class String<_Encoding>::Reader : String<_Encoding>::ConstSpan
+  class String<_Encoding>::Reader : public String<_Encoding>::ConstSpan
   {
   public:
-    using Iterator = String<_Encoding>::ReadIterator<ReadEncoding>;
-
     constexpr Reader(String<_Encoding>::ConstSpan &init) : String<_Encoding>::ConstSpan(init) {}
     using String<_Encoding>::ConstSpan::ConstSpan;
-
-    constexpr Iterator            begin() { return Iterator(*this); }
-    constexpr EndIterationTag     end()   { return EndIterationTag(); }
-
-    friend SpanIterator<const typename _Encoding::BufferElement>;
   };
 
   template<typename _Encoding>
@@ -187,22 +224,15 @@ namespace ecpp
     }
 
     friend _Encoding;
+    friend String<_Encoding>::ConstSpan;
   };
 
   template<typename _Encoding>
   template<typename WriteEncoding>
-  class String<_Encoding>::Writer : String<_Encoding>::Span
+  class String<_Encoding>::Writer : public String<_Encoding>::Span
   {
   public:
-    using Iterator = String<_Encoding>::WriteIterator<WriteEncoding>;
-
     constexpr Writer(String<_Encoding>::Span &init) : String<_Encoding>::Span(init) {}
-
-    constexpr Iterator            begin() { return Iterator(*this); }
-    constexpr EndIterationTag     end()   { return EndIterationTag(); }
-
-    friend SpanIterator<typename       _Encoding::BufferElement>;
-    friend SpanIterator<const typename _Encoding::BufferElement>;
   };
 
   template<typename _Encoding>
@@ -228,10 +258,11 @@ namespace ecpp
     }
     constexpr bool operator < (const EndIterationTag&) const { return (this->buffer_size_ > 0); }
 
+    template<typename InputCodepoint>
     WriteIterator & operator << (InputCodepoint cp)
     {
       using SpanType = String<_Encoding>::SpanBase<const typename std::remove_const<typename _Encoding::BufferElement>::type>;
-      _Encoding::assign(reinterpret_cast<String<_Encoding>::SpanBase<typename _Encoding::BufferElement>&>(*this), cp);
+      _Encoding::assign(cp, reinterpret_cast<String<_Encoding>::Span&>(*this));
       _Encoding::advance(reinterpret_cast<SpanType&>(*this));
       return(*this);
     }
@@ -253,7 +284,7 @@ namespace ecpp
 
     void operator = (const InputCodepoint &cp)
     {
-      _Encoding::assign(*this, cp);
+      _Encoding::assign(cp, reinterpret_cast<String<_Encoding>::Span&>(*this));
     }
 
     InputCodepoint operator* () const
@@ -276,19 +307,96 @@ namespace ecpp
 
     template<typename WriteEncoding>
     constexpr Writer<WriteEncoding> createWriter() { return Writer<WriteEncoding>(*this); }
+
+    using Iterator = String<_Encoding>::WriteIterator<_Encoding>;
+
+    constexpr Iterator            begin() { return Iterator(*this); }
+    constexpr EndIterationTag     end()   { return EndIterationTag(); }
+
+    friend SpanIterator<typename       _Encoding::BufferElement>;
+    friend SpanIterator<const typename _Encoding::BufferElement>;
   };
+
 
   template<typename _Encoding>
   class String<_Encoding>::ConstSpan : public SpanBase<const typename _Encoding::BufferElement>
   {
   public:
+    using typename SpanBase<const typename _Encoding::BufferElement>::ConstIterator;
+
+    using SpanBase<const typename _Encoding::BufferElement>::SpanBase;
+    using SpanBase<const typename _Encoding::BufferElement>::begin;
+    using SpanBase<const typename _Encoding::BufferElement>::end;
+    using SpanBase<const typename _Encoding::BufferElement>::asSpanBase;
+
     constexpr ConstSpan(const ConstSpan &init)
       : SpanBase<const typename _Encoding::BufferElement>(init) {};
+
     constexpr ConstSpan(const SpanBase<const typename _Encoding::BufferElement> &init)
       : SpanBase<const typename _Encoding::BufferElement>(init) {};
 
-    using SpanBase<const typename _Encoding::BufferElement>::SpanBase;
+    constexpr ConstSpan(const typename _Encoding::BufferElement *init)
+      : SpanBase<const typename _Encoding::BufferElement>(init, 0xFFFFFFFF) {};
+
+    constexpr ConstSpan(const ConstIterator &from, const ConstIterator &till)
+      : SpanBase<const typename _Encoding::BufferElement>(from.buffer_, from.buffer_size_ - till.buffer_size_) {};
+
+
+    bool operator == (const ConstSpan &rhs) const
+    {
+      return asSpanBase() == rhs.asSpanBase();
+    }
+
+    bool operator != (const ConstSpan &rhs) const
+    {
+      return asSpanBase() != rhs.asSpanBase();
+    }
+
+    size_t countCharacters() const;
+
+    ConstSpan trim() const;
   };
+
+  template<typename _Encoding>
+  size_t String<_Encoding>::ConstSpan::countCharacters() const
+  {
+    size_t count = 0;
+
+    for (auto it = begin(); it < end(); ++it)
+      ++count;
+
+    return count;
+  }
+
+  template<typename _Encoding>
+  typename String<_Encoding>::ConstSpan String<_Encoding>::ConstSpan::trim() const
+  {
+    auto it = begin();
+
+    while((it < end()) && !(*it).isVisible())
+      ++it;
+
+    auto from = it;
+    auto till = it;
+
+    while(it < end())
+    {
+      if ((*it).isVisible())
+      {
+        ++it;
+        till = it;
+      }
+      else
+      {
+        ++it;
+      }
+    }
+
+    return ConstSpan(from, till);
+  }
+
+
+
 
 
   class String_

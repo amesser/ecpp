@@ -32,8 +32,7 @@
 #ifndef ECPP_STRINGENCODING_H_
 #define ECPP_STRINGENCODING_H_
 
-#include "ecpp/Iterator.hpp"
-#include <iterator>
+#include "ecpp/String.hpp"
 
 namespace ecpp
 {
@@ -41,6 +40,14 @@ namespace ecpp
   {
   public:
     class Codepoint {};
+
+    template<typename InputCodepoint, typename OutputSpan>
+    static void assign(InputCodepoint cp, OutputSpan &dest);
+
+    template<typename SourceEncoding, typename TargetEncoding>
+    static void convert(const typename ecpp::String<SourceEncoding>::ConstSpan &src, typename ecpp::String<TargetEncoding>::Span &dest);
+
+  protected:
   };
 };
 

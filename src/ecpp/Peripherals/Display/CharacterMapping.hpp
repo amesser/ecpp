@@ -20,6 +20,7 @@
 #ifndef ECPP_PERIPHERALS_DISPLAY_CHARACTERMAPPING_HPP_
 #define ECPP_PERIPHERALS_DISPLAY_CHARACTERMAPPING_HPP_
 
+#include "ecpp/StringEncodings/Unicode.hpp"
 #include "ecpp/Text/Utf8.hpp"
 
 namespace ecpp::Peripherals::Display
@@ -27,38 +28,17 @@ namespace ecpp::Peripherals::Display
   template<typename DisplayDriver>
   class MappedTextArea;
 
-  template<typename DisplayDriver>
-  class MappedDisplayCharacter
-  {
-  public:
 
-    void operator = (::ecpp::Text::CodePoint cp)
-    {
-      c_ = DisplayDriver::TextProcessor::encode(cp);
-    }
-
-    void operator = (char c)
-    {
-      c_ = DisplayDriver::TextProcessor::encode(c);
-    }
-
-  private:
-    constexpr MappedDisplayCharacter(typename DisplayDriver::Character & c) : c_(c) {};
-
-    typename DisplayDriver::Character & c_;
-
-    friend class MappedTextArea<DisplayDriver>;
-  };
 
   template<typename DisplayDriver>
   class MappedTextArea
   {
   public:
-    typedef typename DisplayDriver::Character               BufferElement;
-    typedef typename DisplayDriver::Location                Location;
-    typedef typename DisplayDriver::TextProcessor           TextProcessor;
+    using Encoding         = typename DisplayDriver::DisplayEncoding;
+    using BufferElement    = typename DisplayDriver::DisplayEncoding::BufferElement;
+    using Location         = typename DisplayDriver::Location;
 
-    typedef MappedDisplayCharacter<DisplayDriver>           Character;
+    class Character;
 
     typedef decltype(Location::col)                         Column;
     typedef decltype(Location::row)                         Row;
@@ -97,6 +77,29 @@ namespace ecpp::Peripherals::Display
     const Row            num_row_;
     /** add value to go to next row */
     const Row            row_add_;
+  };
+
+  template<typename DisplayDriver>
+  class MappedTextArea<DisplayDriver>::Character : public ecpp::String<typename DisplayDriver::DisplayEncoding>::Span
+  {
+  public:
+    using Encoding = typename DisplayDriver::DisplayEncoding;
+
+    void operator = (::ecpp::StringEncodings::Unicode::Codepoint cp)
+    {
+      Encoding::assign(cp, *this);
+
+    }
+
+    void operator = (char c)
+    {
+      Encoding::assign(::ecpp::StringEncodings::Unicode::Codepoint(c), *this);
+    }
+
+  private:
+    constexpr Character(typename Encoding::BufferElement & c) : ecpp::String<Encoding>::Span(&c, 1) {};
+
+    friend class MappedTextArea<DisplayDriver>;
   };
 }
 #endif /* ECPP_PERIPHERALS_DISPLAY_CHARACTERMAPPING_HPP_ */

@@ -38,12 +38,13 @@ using namespace ecpp::Target;
 
 
 /** Translates an utf8 code-point to NHD 0420 display coding */
-uint8_t NHD0420DZW::TextProcessor::encode(::ecpp::Text::CodePoint cp)
+NHD0420DZW::DisplayEncoding::Codepoint
+NHD0420DZW::DisplayEncoding::createFromUnicode(char32_t uc)
 {
-  if(cp == 0)
+  if(uc == 0)
     return 0x20;
-  else if (cp < 127)
-    return cp;
+  else if (uc < 127)
+    return uc;
   else
     return '?';
 }
