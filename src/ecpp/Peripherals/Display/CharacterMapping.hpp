@@ -21,7 +21,6 @@
 #define ECPP_PERIPHERALS_DISPLAY_CHARACTERMAPPING_HPP_
 
 #include "ecpp/StringEncodings/Unicode.hpp"
-#include "ecpp/Text/Utf8.hpp"
 
 namespace ecpp::Peripherals::Display
 {

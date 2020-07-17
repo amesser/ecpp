@@ -36,7 +36,6 @@
 #include "ecpp/Target/Bsp.hpp"
 #include "ecpp/SimpleStringEncoding.hpp"
 #include "ecpp/StringEncodings/Unicode.hpp"
-#include "ecpp/Text/Utf8.hpp"
 
 namespace ecpp::Peripherals::Display
 {
